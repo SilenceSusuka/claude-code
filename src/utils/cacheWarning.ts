@@ -30,7 +30,7 @@ const cacheWarningStateBySource = new Map<string, CacheWarningState>()
 // Evict the oldest entry (by insertion order) when the limit is exceeded.
 const MAX_SOURCE_ENTRIES = 50
 
-const DEFAULT_CACHE_THRESHOLD = 80
+const DEFAULT_CACHE_THRESHOLD = 70
 
 /**
  * 从 settings.json 读取缓存阈值配置
@@ -38,6 +38,14 @@ const DEFAULT_CACHE_THRESHOLD = 80
 export function getCacheThreshold(): number {
   const settings = getInitialSettings()
   return settings.cacheThreshold ?? DEFAULT_CACHE_THRESHOLD
+}
+
+/**
+ * 检查缓存警告是否启用。默认 true。
+ */
+export function isCacheWarningEnabled(): boolean {
+  const settings = getInitialSettings()
+  return settings.cacheWarningEnabled ?? true
 }
 
 /**

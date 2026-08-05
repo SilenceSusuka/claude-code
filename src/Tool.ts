@@ -62,17 +62,6 @@ import type { DenialTrackingState } from './utils/permissions/denialTracking.js'
 import type { SystemPrompt } from './utils/systemPromptType.js'
 import type { ContentReplacementState } from './utils/toolResultStorage.js'
 
-// Re-export progress types for backwards compatibility
-export type {
-  AgentToolProgress,
-  BashProgress,
-  MCPProgress,
-  REPLToolProgress,
-  SkillToolProgress,
-  TaskOutputProgress,
-  WebSearchProgress,
-}
-
 import type { SpinnerMode } from './components/Spinner.js'
 import type { QuerySource } from './constants/querySource.js'
 import type { SDKStatus } from './entrypoints/agentSdkTypes.js'
@@ -335,7 +324,8 @@ export function filterToolProgressMessages(
 ): ProgressMessage<ToolProgressData>[] {
   return progressMessagesForMessage.filter(
     (msg): msg is ProgressMessage<ToolProgressData> =>
-      (msg.data as { type?: string })?.type !== 'hook_progress',
+      msg.data != null &&
+      (msg.data as { type?: string }).type !== 'hook_progress',
   )
 }
 

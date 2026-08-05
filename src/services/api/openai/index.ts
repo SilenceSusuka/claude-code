@@ -1,4 +1,8 @@
-import type { BetaToolUnion } from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
+import type {
+  BetaToolUnion,
+  BetaMessage,
+  BetaUsage,
+} from '@anthropic-ai/sdk/resources/beta/messages/messages.mjs'
 import type { SystemPrompt } from '../../../utils/systemPromptType.js'
 import type {
   Message,
@@ -9,8 +13,13 @@ import type {
 } from '../../../types/message.js'
 import type { AgentId } from '../../../types/ids.js'
 import type { Tools } from '../../../Tool.js'
+import { getSessionId } from '../../../bootstrap/state.js'
 import { getOpenAIClient } from './client.js'
-import { updateOpenAIUsage } from './openaiShared.js'
+import {
+  formatOpenAIPromptCacheKey,
+  getOfficialOpenAIPromptCacheKey,
+  updateOpenAIUsage,
+} from './openaiShared.js'
 import {
   anthropicMessagesToOpenAI,
   resolveOpenAIModel,
@@ -75,7 +84,8 @@ function convertToResponsesReasoningEffort(
   if (effortValue === 'low') return 'low'
   if (effortValue === 'medium') return 'medium'
   if (effortValue === 'high') return 'high'
-  if (effortValue === 'xhigh' || effortValue === 'max') return 'xhigh'
+  if (effortValue === 'xhigh') return 'xhigh'
+  if (effortValue === 'max') return 'max'
   if (typeof effortValue === 'number') return 'high'
   return undefined
 }
@@ -137,8 +147,8 @@ function isOpenAIConvertibleMessage(
  * `message_stop` handler and the post-loop safety fallback.
  */
 function assembleFinalAssistantOutputs(params: {
-  partialMessage: any
-  contentBlocks: Record<number, any>
+  partialMessage: BetaMessage | null
+  contentBlocks: Record<number, Record<string, unknown>>
   tools: Tools
   agentId: string | undefined
   usage: {
@@ -166,19 +176,19 @@ function assembleFinalAssistantOutputs(params: {
     .map(k => contentBlocks[Number(k)])
     .filter(Boolean)
 
-  if (allBlocks.length > 0) {
+  if (allBlocks.length > 0 && partialMessage) {
     outputs.push({
       message: {
         ...partialMessage,
         content: normalizeContentFromAPI(
-          allBlocks,
+          allBlocks as unknown as BetaMessage['content'],
           tools,
           agentId as AgentId | undefined,
         ),
         usage,
         stop_reason: stopReason,
         stop_sequence: null,
-      },
+      } as AssistantMessage['message'],
       requestId: undefined,
       type: 'assistant',
       uuid: randomUUID(),
@@ -341,14 +351,26 @@ export async function* queryModelOpenAI(
       options.maxOutputTokensOverride,
     )
 
+    const useChatGPTResponses = isChatGPTAuthEnabled()
+    // OpenAI's official OAuth and API-key routes share the same prompt-cache
+    // contract. Scope the key to the real conversation so resumed turns stay
+    // sticky while unrelated sessions do not share a routing bucket. Generic
+    // compatible endpoints intentionally receive no OpenAI-specific fields.
+    const sessionId = getSessionId()
+    const sessionPromptCacheKey = formatOpenAIPromptCacheKey(sessionId)
+    const promptCacheKey = useChatGPTResponses
+      ? sessionPromptCacheKey
+      : getOfficialOpenAIPromptCacheKey(process.env.OPENAI_BASE_URL, sessionId)
+    const useOfficialOpenAICache = promptCacheKey !== undefined
+
     logForDebugging(
-      `[OpenAI] Calling model=${openaiModel}, messages=${openaiMessages.length}, tools=${openaiTools.length}, thinking=${enableThinking}`,
+      `[OpenAI] Calling model=${openaiModel}, messages=${openaiMessages.length}, tools=${openaiTools.length}, thinking=${enableThinking}${promptCacheKey ? `, prompt_cache_key=${promptCacheKey}` : ''}`,
     )
 
     // 11. Call OpenAI API with streaming. ChatGPT subscription auth uses the
     // Codex Responses backend; API-key/OpenAI-compatible auth keeps the
     // existing Chat Completions adapter.
-    const adaptedStream = isChatGPTAuthEnabled()
+    const adaptedStream = useChatGPTResponses
       ? adaptResponsesStreamToAnthropic(
           await createChatGPTResponsesStream({
             request: buildResponsesRequest({
@@ -357,6 +379,7 @@ export async function* queryModelOpenAI(
               tools: openaiTools,
               toolChoice: openaiToolChoice,
               reasoningEffort,
+              promptCacheKey: sessionPromptCacheKey,
             }),
             signal,
             fetchOverride: options.fetchOverride as unknown as typeof fetch,
@@ -377,19 +400,21 @@ export async function* queryModelOpenAI(
               enableThinking,
               maxTokens,
               temperatureOverride: options.temperatureOverride,
+              promptCacheKey,
             }),
             { signal },
           ),
           openaiModel,
+          { includeCacheWriteTokens: useOfficialOpenAICache },
         )
 
     // 12. Convert OpenAI stream to Anthropic events, then process into
     //     AssistantMessage + StreamEvent (matching the Anthropic path behavior)
 
     // Accumulate content blocks and usage, same as the Anthropic path in claude.ts
-    const contentBlocks: Record<number, any> = {}
+    const contentBlocks: Record<number, Record<string, unknown>> = {}
     const collectedMessages: AssistantMessage[] = []
-    let partialMessage: any
+    let partialMessage: BetaMessage | null = null
     let stopReason: string | null = null
     let usage = {
       input_tokens: 0,
@@ -403,19 +428,19 @@ export async function* queryModelOpenAI(
     for await (const event of adaptedStream) {
       switch (event.type) {
         case 'message_start': {
-          partialMessage = (event as any).message
+          partialMessage = event.message
           ttftMs = Date.now() - start
-          if ((event as any).message?.usage) {
+          if (event.message.usage) {
             usage = {
               ...usage,
-              ...(event as any).message.usage,
+              ...(event.message.usage as unknown as typeof usage),
             }
           }
           break
         }
         case 'content_block_start': {
-          const idx = (event as any).index
-          const cb = (event as any).content_block
+          const idx = event.index
+          const cb = event.content_block
           if (cb.type === 'tool_use') {
             contentBlocks[idx] = { ...cb, input: '' }
           } else if (cb.type === 'text') {
@@ -428,16 +453,18 @@ export async function* queryModelOpenAI(
           break
         }
         case 'content_block_delta': {
-          const idx = (event as any).index
-          const delta = (event as any).delta
+          const idx = event.index
+          const delta = event.delta
           const block = contentBlocks[idx]
           if (!block) break
           if (delta.type === 'text_delta') {
-            block.text = (block.text || '') + delta.text
+            block.text = ((block.text as string | undefined) || '') + delta.text
           } else if (delta.type === 'input_json_delta') {
-            block.input = (block.input || '') + delta.partial_json
+            block.input =
+              ((block.input as string | undefined) || '') + delta.partial_json
           } else if (delta.type === 'thinking_delta') {
-            block.thinking = (block.thinking || '') + delta.thinking
+            block.thinking =
+              ((block.thinking as string | undefined) || '') + delta.thinking
           } else if (delta.type === 'signature_delta') {
             block.signature = delta.signature
           }
@@ -448,12 +475,15 @@ export async function* queryModelOpenAI(
           break
         }
         case 'message_delta': {
-          const deltaUsage = (event as any).usage
+          const deltaUsage = event.usage
           if (deltaUsage) {
-            usage = updateOpenAIUsage(usage, deltaUsage)
+            usage = updateOpenAIUsage(
+              usage,
+              deltaUsage as unknown as Parameters<typeof updateOpenAIUsage>[1],
+            )
           }
-          if ((event as any).delta?.stop_reason != null) {
-            stopReason = (event as any).delta.stop_reason
+          if (event.delta.stop_reason != null) {
+            stopReason = event.delta.stop_reason
           }
           break
         }
@@ -482,8 +512,15 @@ export async function* queryModelOpenAI(
           }
           // Track cost and token usage
           if (usage.input_tokens + usage.output_tokens > 0) {
-            const costUSD = calculateUSDCost(openaiModel, usage as any)
-            addToTotalSessionCost(costUSD, usage as any, options.model)
+            const costUSD = calculateUSDCost(
+              openaiModel,
+              usage as unknown as BetaUsage,
+            )
+            addToTotalSessionCost(
+              costUSD,
+              usage as unknown as BetaUsage,
+              options.model,
+            )
           }
           break
         }

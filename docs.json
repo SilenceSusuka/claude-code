@@ -74,7 +74,8 @@
           "docs/safety/permission-model",
           "docs/safety/sandbox",
           "docs/safety/plan-mode",
-          "docs/safety/auto-mode"
+          "docs/safety/auto-mode",
+          "docs/safety/miit-warning-response"
         ]
       },
       {
@@ -87,6 +88,7 @@
           "docs/internals/sentry-setup",
           "docs/internals/hidden-features",
           "docs/internals/ant-only-world",
+          "docs/internals/session-transcript-persistence",
           "docs/features/debug-mode",
           "docs/features/buddy"
         ]

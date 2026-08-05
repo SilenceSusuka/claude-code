@@ -52,7 +52,6 @@ import { lazySchema } from 'src/utils/lazySchema.js'
 import { logError } from 'src/utils/log.js'
 import { isAutoMemFile } from 'src/utils/memoryFileDetection.js'
 import { createUserMessage } from 'src/utils/messages.js'
-import { getCanonicalName, getMainLoopModel } from 'src/utils/model/model.js'
 import {
   mapNotebookCellsToToolResult,
   readNotebook,
@@ -409,9 +408,7 @@ export const FileReadTool = buildTool({
   renderToolResultMessage,
   // UI.tsx:140 — ALL types render summary chrome only: "Read N lines",
   // "Read image (42KB)". Never the content itself. The model-facing
-  // serialization (below) sends content + CYBER_RISK_MITIGATION_REMINDER
-  // + line prefixes; UI shows none of it. Nothing to index. Caught by
-  // the render-fidelity test when this initially claimed file.content.
+  // serialization (below) sends content + line prefixes; UI shows none of it.
   extractSearchText() {
     return ''
   },
@@ -465,6 +462,23 @@ export const FileReadTool = buildTool({
       fullFilePath.startsWith('\\\\') || fullFilePath.startsWith('//')
     if (isUncPath) {
       return { result: true }
+    }
+
+    // 预检：如果路径已是一个存在的目录，及时拒绝并给出指引
+    // 避免 AI 模型用 Read 工具读取目录路径时抛出原始 EISDIR 错误，
+    // 模型拿到错误后不知该用 ls 列目录，可能做出错误恢复决策。
+    try {
+      const fileStat = await getFsImplementation().stat(fullFilePath)
+      if (fileStat.isDirectory()) {
+        return {
+          result: false,
+          message: `Cannot read '${file_path}': the specified path is an existing directory. Use Bash ls to list files in this directory, or specify a filename path to read a specific file.`,
+          errorCode: 10,
+        }
+      }
+    } catch (e) {
+      if (!isENOENT(e)) throw e
+      // ENOENT = 文件还不存在，放行，call() 会通过 findSimilarFile 给出友好建议
     }
 
     // Binary extension check (string check on extension only, no I/O).
@@ -694,12 +708,7 @@ export const FileReadTool = buildTool({
         let content: string
 
         if (data.file.content) {
-          content =
-            memoryFileFreshnessPrefix(data) +
-            formatFileLines(data.file) +
-            (shouldIncludeFileReadMitigation()
-              ? CYBER_RISK_MITIGATION_REMINDER
-              : '')
+          content = memoryFileFreshnessPrefix(data) + formatFileLines(data.file)
         } else {
           // Determine the appropriate warning message
           content =
@@ -725,17 +734,6 @@ function pickLineFormatInstruction(): string {
 /** Format file content with line numbers. */
 function formatFileLines(file: { content: string; startLine: number }): string {
   return addLineNumbers(file)
-}
-
-export const CYBER_RISK_MITIGATION_REMINDER =
-  '\n\n<system-reminder>\nWhenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.\n</system-reminder>\n'
-
-// Models where cyber risk mitigation should be skipped
-const MITIGATION_EXEMPT_MODELS = new Set(['claude-opus-4-6'])
-
-function shouldIncludeFileReadMitigation(): boolean {
-  const shortName = getCanonicalName(getMainLoopModel())
-  return !MITIGATION_EXEMPT_MODELS.has(shortName)
 }
 
 /**

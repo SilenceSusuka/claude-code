@@ -16,6 +16,10 @@ import {
 
 export type { EffortLevel }
 
+// NOTE: 'ultracode' is NOT an effort level. It is a session-scoped multi-agent
+// orchestration opt-in injected by the harness (claude.ai/client) as a
+// system-reminder, orthogonal to the effort parameter. EffortLevel / EffortValue
+// must never include 'ultracode'; /effort only accepts the levels below.
 export const EFFORT_LEVELS = [
   'low',
   'medium',
@@ -183,19 +187,7 @@ export function resolveAppliedEffort(
   if (envOverride === null) {
     return undefined
   }
-  const resolved =
-    envOverride ?? appStateEffortValue ?? getDefaultEffortForModel(model)
-  // OpenAI Responses uses xhigh as its highest public reasoning effort.
-  // Keep /effort max usable as a familiar alias in ChatGPT subscription mode.
-  if (
-    resolved === 'max' &&
-    getAPIProvider() === 'openai' &&
-    isChatGPTAuthMode() &&
-    modelSupportsXhighEffort(model)
-  ) {
-    return 'xhigh'
-  }
-  return resolved
+  return envOverride ?? appStateEffortValue ?? getDefaultEffortForModel(model)
 }
 
 /**

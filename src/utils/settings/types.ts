@@ -460,13 +460,13 @@ export const SettingsSchema = lazySchema(() =>
         .boolean()
         .optional()
         .describe('Disable all hooks and statusLine execution'),
-      // Which shell backs input-box `!` (see docs/design/ps-shell-selection.md §4.2)
+      // Which shell backs input-box `!` (see resolveDefaultShell)
       defaultShell: z
         .enum(['bash', 'powershell'])
         .optional()
         .describe(
           'Default shell for input-box ! commands. ' +
-            "Defaults to 'bash' on all platforms (no Windows auto-flip).",
+            "Defaults to 'powershell' on Windows when the PowerShell tool is enabled, otherwise 'bash'. Set explicitly to override.",
         ),
       // Only run hooks defined in managed settings (managed-settings.json)
       allowManagedHooksOnly: z
@@ -660,6 +660,54 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe(
           'Skip the WebFetch blocklist check for enterprise environments with restrictive security policies',
+        ),
+      webSearchAdapter: z
+        .enum(['api', 'bing', 'brave', 'exa', 'tavily'])
+        .optional()
+        .describe(
+          'Web search backend adapter. "tavily" uses Tavily Search API (default), ' +
+            '"api" uses Anthropic server-side search, "bing" scrapes Bing HTML, ' +
+            '"brave" uses Brave Search API, "exa" uses Exa AI.',
+        ),
+      webFetchAdapter: z
+        .enum(['tavily', 'http'])
+        .optional()
+        .describe(
+          'Web fetch backend. "tavily" uses Tavily Extract API which returns Markdown directly (default), ' +
+            '"http" fetches the URL directly via HTTP.',
+        ),
+      tavilyEndpointUrl: z
+        .string()
+        .optional()
+        .describe(
+          'Custom Tavily API endpoint URL. Defaults to https://tavily.claude-code-best.win. ' +
+            'Used by both WebSearch and WebFetch when tavily adapter is selected.',
+        ),
+      braveApiKey: z
+        .string()
+        .optional()
+        .describe(
+          'Brave Search API key. Required when using the brave web search adapter.',
+        ),
+      webFetchHttpTimeoutMs: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          'HTTP timeout in milliseconds for the HTTP direct web fetch backend. Defaults to 60000 (60s).',
+        ),
+      exaApiKey: z
+        .string()
+        .optional()
+        .describe(
+          'Exa AI API key. Required when using the exa web search adapter.',
+        ),
+      exaEndpointUrl: z
+        .string()
+        .optional()
+        .describe(
+          'Custom Exa AI MCP endpoint URL. Defaults to https://mcp.exa.ai/mcp.',
         ),
       sandbox: SandboxSettingsSchema().optional(),
       feedbackSurveyRate: z
@@ -1087,7 +1135,13 @@ export const SettingsSchema = lazySchema(() =>
         .max(100)
         .optional()
         .describe(
-          'Prompt cache hit rate threshold (0-100). Warnings shown when cache hit rate falls below this percentage. Default: 80.',
+          'Prompt cache hit rate threshold (0-100). Warnings shown when cache hit rate falls below this percentage. Default: 70.',
+        ),
+      cacheWarningEnabled: z
+        .boolean()
+        .optional()
+        .describe(
+          'Whether to show cache hit rate warnings in the message flow when the rate falls below cacheThreshold. Default: true.',
         ),
       pluginTrustMessage: z
         .string()
