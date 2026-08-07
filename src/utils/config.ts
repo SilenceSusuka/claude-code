@@ -16,6 +16,7 @@ import { getCwd } from '../utils/cwd.js'
 import { registerCleanup } from './cleanupRegistry.js'
 import { logForDebugging } from './debug.js'
 import { logForDiagnosticsNoPII } from './diagLogs.js'
+import { allowConfigReading, isConfigReadingAllowed } from './configGate.js'
 import { getGlobalClaudeFile } from './env.js'
 import { getClaudeConfigHomeDir, isEnvTruthy } from './envUtils.js'
 import { ConfigParseError, getErrnoCode } from './errors.js'
@@ -1336,11 +1337,8 @@ function saveConfigWithLock<A extends object>(
   }
 }
 
-// Flag to track if config reading is allowed
-let configReadingAllowed = false
-
 export function enableConfigs(): void {
-  if (configReadingAllowed) {
+  if (isConfigReadingAllowed()) {
     // Ensure this is idempotent
     return
   }
@@ -1350,7 +1348,7 @@ export function enableConfigs(): void {
 
   // Any reads to configuration before this flag is set show an console warning
   // to prevent us from adding config reading during module initialization
-  configReadingAllowed = true
+  allowConfigReading()
   // We only check the global config because currently all the configs share a file
   getConfig(
     getGlobalClaudeFile(),
@@ -1432,7 +1430,7 @@ function getConfig<A>(
   throwOnInvalid?: boolean,
 ): A {
   // Log a warning if config is accessed before it's allowed
-  if (!configReadingAllowed && process.env.NODE_ENV !== 'test') {
+  if (!isConfigReadingAllowed() && process.env.NODE_ENV !== 'test') {
     throw new Error('Config accessed before allowed.')
   }
 

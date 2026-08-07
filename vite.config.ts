@@ -99,6 +99,16 @@ export default defineConfig({
         // bringing RSS down to ~300 MB.
         entryFileNames: 'cli.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
+        // Keep mutable singletons in one shared chunk so Vite cannot duplicate
+        // module state across code-split copies (breaks AppState / config gates).
+        manualChunks(id) {
+          if (
+            id.includes('/src/utils/configGate.ts') ||
+            id.includes('/src/state/AppStateContext.ts')
+          ) {
+            return 'singletons'
+          }
+        },
       },
 
       plugins: [

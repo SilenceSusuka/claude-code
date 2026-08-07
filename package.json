@@ -1,6 +1,6 @@
 {
   "name": "claude-code-silencesusuka",
-  "version": "2.8.5",
+  "version": "2.8.6",
   "description": "Fork of Claude Code Best — interactive AI coding assistant in the terminal",
   "type": "module",
   "author": "SilenceSusuka",
