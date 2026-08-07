@@ -32,6 +32,7 @@ const VoiceProvider: (props: { children: React.ReactNode }) => React.ReactNode =
 
 /* eslint-enable @typescript-eslint/no-require-imports */
 import { type AppState, type AppStateStore, getDefaultAppState } from './AppStateStore.js';
+import { AppStoreContext, HasAppStateContext } from './AppStateContext.js';
 
 // TODO: Remove these re-exports once all callers import directly from
 // ./AppStateStore.js. Kept for back-compat during migration so .ts callers
@@ -46,15 +47,14 @@ export {
   type SpeculationState,
 } from './AppStateStore.js';
 
-export const AppStoreContext = React.createContext<AppStateStore | null>(null);
+// Re-export so existing `import { AppStoreContext } from '.../AppState.js'` keeps working.
+export { AppStoreContext } from './AppStateContext.js';
 
 type Props = {
   children: React.ReactNode;
   initialState?: AppState;
   onChangeAppState?: (args: { newState: AppState; oldState: AppState }) => void;
 };
-
-const HasAppStateContext = React.createContext<boolean>(false);
 
 export function AppStateProvider({ children, initialState, onChangeAppState }: Props): React.ReactNode {
   // Don't allow nested AppStateProviders.
