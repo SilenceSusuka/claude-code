@@ -1,16 +1,16 @@
 {
-  "name": "claude-code-best",
+  "name": "claude-code-silencesusuka",
   "version": "2.8.4",
-  "description": "Reverse-engineered Anthropic Claude Code CLI — interactive AI coding assistant in the terminal",
+  "description": "Fork of Claude Code Best — interactive AI coding assistant in the terminal",
   "type": "module",
-  "author": "claude-code-best <claude-code-best@proton.me>",
+  "author": "SilenceSusuka",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/claude-code-best/claude-code.git"
+    "url": "git+https://github.com/SilenceSusuka/claude-code.git"
   },
-  "homepage": "https://github.com/claude-code-best/claude-code#readme",
+  "homepage": "https://github.com/SilenceSusuka/claude-code#readme",
   "bugs": {
-    "url": "https://github.com/claude-code-best/claude-code/issues"
+    "url": "https://github.com/SilenceSusuka/claude-code/issues"
   },
   "keywords": [
     "claude",
@@ -25,9 +25,9 @@
     "bun": ">=1.3.0"
   },
   "bin": {
-    "ccb": "dist/cli-node.js",
-    "ccb-bun": "dist/cli-bun.js",
-    "claude-code-best": "dist/cli-node.js"
+    "ccb-ss": "dist/cli-node.js",
+    "ccb-ss-bun": "dist/cli-bun.js",
+    "claude-code-silencesusuka": "dist/cli-node.js"
   },
   "workspaces": [
     "packages/*",

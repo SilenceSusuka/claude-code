@@ -6,7 +6,7 @@
  * 2. Copy native addon files
  * 3. Generate dual entry points (cli-bun.js, cli-node.js)
  */
-import { readdir, readFile, writeFile, cp } from 'node:fs/promises'
+import { readdir, readFile, writeFile, cp, unlink } from 'node:fs/promises'
 import { chmodSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -78,8 +78,38 @@ async function postBuild() {
   chmodSync(cliBun, 0o755)
   chmodSync(cliNode, 0o755)
 
+  // Step 4: Remove sourcemaps and sourceMappingURL comments (source stays on GitHub only)
+  const SOURCE_MAPPING_URL = /\n?\/\/[#@] sourceMappingURL=.*$/gm
+  let mapsRemoved = 0
+  let mappingCommentsStripped = 0
+
+  async function stripMapsInDir(dir: string): Promise<void> {
+    let entries: string[] = []
+    try {
+      entries = await readdir(dir)
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      const filePath = join(dir, entry)
+      if (entry.endsWith('.map')) {
+        await unlink(filePath)
+        mapsRemoved++
+        continue
+      }
+      if (!entry.endsWith('.js')) continue
+      const content = await readFile(filePath, 'utf-8')
+      if (!content.includes('sourceMappingURL=')) continue
+      await writeFile(filePath, content.replace(SOURCE_MAPPING_URL, ''))
+      mappingCommentsStripped++
+    }
+  }
+
+  await stripMapsInDir(outdir)
+  await stripMapsInDir(chunksDir)
+
   console.log(
-    `Post-build complete: patched ${bunPatched} Bun destructure across ${jsFiles.length + chunkFiles.length} files, generated entry points`,
+    `Post-build complete: patched ${bunPatched} Bun destructure across ${jsFiles.length + chunkFiles.length} files, generated entry points, removed ${mapsRemoved} sourcemaps, stripped ${mappingCommentsStripped} sourceMappingURL comments`,
   )
 }
 

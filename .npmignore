@@ -1,0 +1,5 @@
+# Never ship source maps — source lives on GitHub only
+**/*.map
+**/*.js.map
+**/*.mjs.map
+**/*.cjs.map

@@ -21,7 +21,7 @@ const result = await Bun.build({
   outdir,
   target: 'bun',
   splitting: true,
-  sourcemap: 'linked',
+  sourcemap: 'none',
   define: {
     ...getMacroDefines(),
     // React production mode — eliminates _debugStack Error objects
