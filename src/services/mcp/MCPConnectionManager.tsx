@@ -1,20 +1,7 @@
-import React, { createContext, type ReactNode, useContext, useMemo } from 'react';
-import type { Command } from '../../commands.js';
-import type { Tool } from '../../Tool.js';
-import type { MCPServerConnection, ScopedMcpServerConfig, ServerResource } from './types.js';
+import React, { type ReactNode, useContext, useMemo } from 'react';
 import { useManageMCPConnections } from './useManageMCPConnections.js';
-
-interface MCPConnectionContextValue {
-  reconnectMcpServer: (serverName: string) => Promise<{
-    client: MCPServerConnection;
-    tools: Tool[];
-    commands: Command[];
-    resources?: ServerResource[];
-  }>;
-  toggleMcpServer: (serverName: string) => Promise<void>;
-}
-
-const MCPConnectionContext = createContext<MCPConnectionContextValue | null>(null);
+import { MCPConnectionContext, type MCPConnectionContextValue } from './MCPConnectionContext.js';
+import type { ScopedMcpServerConfig } from './types.js';
 
 export function useMcpReconnect() {
   const context = useContext(MCPConnectionContext);
@@ -45,7 +32,10 @@ export function MCPConnectionManager({
   isStrictMcpConfig,
 }: MCPConnectionManagerProps): React.ReactNode {
   const { reconnectMcpServer, toggleMcpServer } = useManageMCPConnections(dynamicMcpConfig, isStrictMcpConfig);
-  const value = useMemo(() => ({ reconnectMcpServer, toggleMcpServer }), [reconnectMcpServer, toggleMcpServer]);
+  const value = useMemo<MCPConnectionContextValue>(
+    () => ({ reconnectMcpServer, toggleMcpServer }),
+    [reconnectMcpServer, toggleMcpServer],
+  );
 
   return <MCPConnectionContext.Provider value={value}>{children}</MCPConnectionContext.Provider>;
 }

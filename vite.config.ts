@@ -104,7 +104,8 @@ export default defineConfig({
         manualChunks(id) {
           if (
             id.includes('/src/utils/configGate.ts') ||
-            id.includes('/src/state/AppStateContext.ts')
+            id.includes('/src/state/AppStateContext.ts') ||
+            id.includes('/src/services/mcp/MCPConnectionContext.ts')
           ) {
             return 'singletons'
           }
