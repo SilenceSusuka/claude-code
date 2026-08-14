@@ -59,6 +59,11 @@ import {
 import { generateToolUseSummary } from './services/toolUseSummary/toolUseSummaryGenerator.js'
 import { prependUserContext, appendSystemContext } from './utils/api.js'
 import {
+  applyInstructionFollowToSystem,
+  formatFollowTailContent,
+  loadFollowPrompt,
+} from './utils/instructionFollow.js'
+import {
   createAttachmentMessage,
   filterDuplicateMemoryAttachments,
   getAttachmentMessages,
@@ -644,8 +649,14 @@ async function* queryLoop(
       messagesForQuery = collapseResult.messages
     }
 
+    // Sticky instruction-follow: re-read profile each hop so file edits
+    // apply on the next tool-loop iteration without restarting the session.
+    const followPrompt = loadFollowPrompt()
     const fullSystemPrompt = asSystemPrompt(
-      appendSystemContext(systemPrompt, systemContext),
+      applyInstructionFollowToSystem(
+        appendSystemContext(systemPrompt, systemContext),
+        followPrompt,
+      ),
     )
 
     queryCheckpoint('query_autocompact_start')
@@ -896,8 +907,20 @@ async function* queryLoop(
         try {
           let streamingFallbackOccured = false
           queryCheckpoint('query_api_streaming_start')
+          const messagesForModel = prependUserContext(
+            messagesForQuery,
+            userContext,
+          )
           for await (const message of deps.callModel({
-            messages: prependUserContext(messagesForQuery, userContext),
+            messages: followPrompt
+              ? [
+                  ...messagesForModel,
+                  createUserMessage({
+                    content: formatFollowTailContent(followPrompt),
+                    isMeta: true,
+                  }),
+                ]
+              : messagesForModel,
             systemPrompt: fullSystemPrompt,
             thinkingConfig: toolUseContext.options.thinkingConfig,
             tools: toolUseContext.options.tools,

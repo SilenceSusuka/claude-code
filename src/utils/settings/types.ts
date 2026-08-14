@@ -795,6 +795,13 @@ export const SettingsSchema = lazySchema(() =>
         .describe(
           'When true, poor mode is active — extract_memories and prompt_suggestion are disabled to save tokens.',
         ),
+      instructionFollowProfile: z
+        .string()
+        .optional()
+        .describe(
+          'Active instruction-follow profile name (markdown file under follow-prompts/). ' +
+            'Injected on every model call as a system section plus a trailing recency reminder.',
+        ),
       showClearContextOnPlanAccept: z
         .boolean()
         .optional()

@@ -178,6 +178,7 @@ import passes from './commands/passes/index.js'
 import privacySettings from './commands/privacy-settings/index.js'
 import hooks from './commands/hooks/index.js'
 import files from './commands/files/index.js'
+import follow from './commands/follow/index.js'
 import branch from './commands/branch/index.js'
 import artifacts from './commands/artifacts/index.js'
 import agents from './commands/agents/index.js'
@@ -329,6 +330,7 @@ const COMMANDS = memoize((): Command[] => [
   exit,
   fast,
   files,
+  follow,
   heapDump,
   help,
   ide,
