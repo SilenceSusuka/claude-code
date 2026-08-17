@@ -179,6 +179,7 @@ import privacySettings from './commands/privacy-settings/index.js'
 import hooks from './commands/hooks/index.js'
 import files from './commands/files/index.js'
 import follow from './commands/follow/index.js'
+import keysmith from './commands/keysmith/index.js'
 import branch from './commands/branch/index.js'
 import artifacts from './commands/artifacts/index.js'
 import agents from './commands/agents/index.js'
@@ -332,6 +333,7 @@ const COMMANDS = memoize((): Command[] => [
   files,
   follow,
   heapDump,
+  keysmith,
   help,
   ide,
   init,

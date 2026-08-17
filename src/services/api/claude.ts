@@ -73,6 +73,7 @@ import { resolveAppliedEffort } from '../../utils/effort.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
 import { errorMessage } from '../../utils/errors.js'
 import { captureAPIRequest, logError } from '../../utils/log.js'
+import { appendInstructionPrimeTurns } from '../../utils/instructionPrime.js'
 import {
   createAssistantAPIErrorMessage,
   createUserMessage,
@@ -1346,7 +1347,7 @@ async function* queryModel(
     // the full tool pool so SearchExtraToolsTool can search deferred MCP tools that
     // were intentionally filtered out of the initial API tool list above.
     yield* queryModelOpenAI(
-      messagesForAPI,
+      appendInstructionPrimeTurns(messagesForAPI),
       systemPrompt,
       tools,
       signal,
@@ -1358,7 +1359,7 @@ async function* queryModel(
   if (getAPIProvider() === 'gemini') {
     const { queryModelGemini } = await import('./gemini/index.js')
     yield* queryModelGemini(
-      messagesForAPI,
+      appendInstructionPrimeTurns(messagesForAPI),
       systemPrompt,
       filteredTools,
       signal,
@@ -1371,7 +1372,7 @@ async function* queryModel(
   if (getAPIProvider() === 'grok') {
     const { queryModelGrok } = await import('./grok/index.js')
     yield* queryModelGrok(
-      messagesForAPI,
+      appendInstructionPrimeTurns(messagesForAPI),
       systemPrompt,
       filteredTools,
       signal,
@@ -1418,6 +1419,10 @@ async function* queryModel(
       }
     }
   }
+
+  // Recency prime must be the last two turns the model sees, even if a
+  // deferred-tools reminder was just appended.
+  messagesForAPI = appendInstructionPrimeTurns(messagesForAPI)
 
   // Chrome tool-search instructions: when the delta attachment is enabled,
   // these are carried as a client-side block in mcp_instructions_delta

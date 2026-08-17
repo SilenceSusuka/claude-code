@@ -63,6 +63,7 @@ import {
   formatFollowTailContent,
   loadFollowPrompt,
 } from './utils/instructionFollow.js'
+import { appendInstructionPrimeTurns } from './utils/instructionPrime.js'
 import {
   createAttachmentMessage,
   filterDuplicateMemoryAttachments,
@@ -911,16 +912,17 @@ async function* queryLoop(
             messagesForQuery,
             userContext,
           )
+          const messagesWithFollow = followPrompt
+            ? [
+                ...messagesForModel,
+                createUserMessage({
+                  content: formatFollowTailContent(followPrompt),
+                  isMeta: true,
+                }),
+              ]
+            : messagesForModel
           for await (const message of deps.callModel({
-            messages: followPrompt
-              ? [
-                  ...messagesForModel,
-                  createUserMessage({
-                    content: formatFollowTailContent(followPrompt),
-                    isMeta: true,
-                  }),
-                ]
-              : messagesForModel,
+            messages: appendInstructionPrimeTurns(messagesWithFollow),
             systemPrompt: fullSystemPrompt,
             thinkingConfig: toolUseContext.options.thinkingConfig,
             tools: toolUseContext.options.tools,
