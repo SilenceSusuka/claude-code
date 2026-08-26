@@ -64,7 +64,8 @@ describe('keysmithBridge', () => {
   test('buildKeysmithProfileContent combines rules + append templates', () => {
     const content = buildKeysmithProfileContent()
     expect(content).toContain('# 指令遵循：keysmith')
-    expect(content).toContain('Research Engineering Assistant')
+    expect(content).toContain('小砂糖')
+    expect(content).toContain('Master最忠诚的全能助手')
     expect(content).toContain('provide the requested prose directly')
   })
 
