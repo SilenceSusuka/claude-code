@@ -511,9 +511,7 @@ export async function getSystemPrompt(
   ) {
     logForDebugging(`[SystemPrompt] path=simple-proactive`)
     return [
-      `\nYou are an autonomous agent. Use the available tools to do useful work.
-
-${CYBER_RISK_INSTRUCTION}`,
+      getSimpleIntroSection(outputStyleConfig),
       getSystemRemindersSection(),
       await loadMemoryPrompt(),
       envInfo,
