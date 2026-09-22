@@ -19,11 +19,11 @@ export function useChromeExtensionNotification(): void {
     const chromeFlag = getChromeFlag();
     if (!shouldEnableClaudeInChrome(chromeFlag)) return null;
 
-    // Claude in Chrome is only supported for claude.ai subscribers (unless user is ant)
+    // 小砂糖 in Chrome is only supported for claude.ai subscribers (unless user is ant)
     if (process.env.USER_TYPE !== 'ant' && !isClaudeAISubscriber()) {
       return {
         key: 'chrome-requires-subscription',
-        jsx: <Text color="error">Claude in Chrome requires a claude.ai subscription</Text>,
+        jsx: <Text color="error">小砂糖 in Chrome requires a claude.ai subscription</Text>,
         priority: 'immediate',
         timeoutMs: 5000,
       };
@@ -45,7 +45,7 @@ export function useChromeExtensionNotification(): void {
       // (not explicitly enabled with --chrome or disabled with --no-chrome)
       return {
         key: 'claude-in-chrome-default-enabled',
-        text: `Claude in Chrome enabled · /chrome`,
+        text: `小砂糖 in Chrome enabled · /chrome`,
         priority: 'low',
       };
     }

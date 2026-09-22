@@ -1,6 +1,6 @@
 # JSONL Transcript 会话持久化与恢复机制
 
-本文梳理 Claude Code 基于 JSONL transcript 的会话持久化、恢复、错误恢复、上下文压缩、分支、subagent、fork agent 和 remote agent 逻辑。
+本文梳理 satou code 基于 JSONL transcript 的会话持久化、恢复、错误恢复、上下文压缩、分支、subagent、fork agent 和 remote agent 逻辑。
 
 这不是按文件罗列的源码笔记，而是一份机制手册：先建立心智模型，再看数据结构、生命周期、异常路径和源码入口。
 
@@ -16,7 +16,7 @@
 
 ## 总览
 
-Claude Code 的本地会话核心是 append-only JSONL。每一行是一个 `Entry`，但恢复时不会按文件顺序重放整个文件，而是：
+satou code 的本地会话核心是 append-only JSONL。每一行是一个 `Entry`，但恢复时不会按文件顺序重放整个文件，而是：
 
 1. 把 transcript message 放入 `uuid -> message` map。
 2. 把 metadata entry 放入各自 map 或数组。
@@ -426,7 +426,7 @@ REPL 内 resume 比 CLI 启动路径多了“从当前 session 切换到另一�
 | API 前进程崩溃 | 用户 prompt 已由 `QueryEngine.ask()` 先写入。 | resume 看到普通 user，触发 `interrupted_prompt`。 |
 | streaming fallback 产生孤儿 assistant | yield tombstone，REPL 移除 UI message 并调用 `removeTranscriptMessage(uuid)`。 | 优先只改 JSONL 尾部 64KB；大文件目标不在尾部时跳过慢 rewrite。 |
 | prompt-too-long / media-too-large | streaming 阶段先 withheld；先 context-collapse drain，再 reactive compact；失败才暴露错误。 | compact 成功则写 boundary/summary 并重试；失败才写 API error message。 |
-| max_output_tokens | 先提高 max output override；仍失败则注入内部 recovery prompt 续写；耗尽才暴露错误。 | 内部 retry prompt 不一定成为普通 transcript，取决于是否 yield 到外层。 |
+| max_output_tokens | 先提高 max output override；仍失败则传入内部 recovery prompt 续写；耗尽才暴露错误。 | 内部 retry prompt 不一定成为普通 transcript，取决于是否 yield 到外层。 |
 | auto compact 关闭但到 blocking limit | 直接 yield prompt-too-long 风格 API error。 | 保留用户手动 `/compact` 空间。 |
 | abort during streaming/tools | 补齐缺失 tool_result，必要时 yield user interruption message。 | `reason === interrupt` 时跳过 interruption message，因为后续 queued user message 已提供上下文。 |
 | stop hook blocking | 把 hook blocking error 加入 state 后重试。 | 有 reactive compact guard，避免 hook/error/compact 无限循环。 |
@@ -589,7 +589,7 @@ loader 会收集这些 entry；遇到 compact boundary 时会清空旧 commits/s
 
 原因：subagent 和主线程同进程，共享模块级状态。`agent:*` compact 如果清主线程 context-collapse 或 memory cache，会破坏父会话状态。
 
-它明确不清 `resetSentSkillNames()`，避免 compact 后重新注入完整 skill listing，浪费 token 和 prompt cache。
+它明确不清 `resetSentSkillNames()`，避免 compact 后重新传入完整 skill listing，浪费 token 和 prompt cache。
 
 ## 分支与 Fork 对比
 

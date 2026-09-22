@@ -599,7 +599,7 @@ export function routeWorkflowKey(input: string, key: KeyEvent): WorkflowKeyActio
   return null
 }
 
-/** 焦点模型回调（WorkflowsPanel 注入）。 */
+/** 焦点模型回调（WorkflowsPanel 传入）。 */
 export type WorkflowKeyboardHandlers = {
   nextTab: () => void
   prevTab: () => void

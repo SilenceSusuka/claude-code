@@ -123,7 +123,7 @@ journal 完整 10 条 agent 记录在 `.claude/workflow-runs/wtujwahzf/journal.j
 
 ## 做得好的地方
 
-1. **架构干净**：workflow-engine 包零 host 依赖（只 ajv + zod），教科书级 hexagonal。所有 host 交互通过注入的 `Ports` / `HostHandle`。
+1. **架构干净**：workflow-engine 包零 host 依赖（只 ajv + zod），教科书级 hexagonal。所有 host 交互通过传入的 `Ports` / `HostHandle`。
 2. **Journal 离散检测健壮**：`hooks.ts:65-81` 的 key mismatch → 优雅降级到全重跑，不会产生错误结果。
 3. **Budget API 设计良好**：`Budget` 类的 `assertCanSpend` / `addOutputTokens` / `remaining` API 表面正确（虽然实现有竞态），后续加 reservation 机制容易。
 4. **Engine 层测试覆盖扎实**：`hooks.test.ts` 覆盖 dead / skipped / budget exhaust / abort / adapter 错误 / parallel-pipeline error suppression，这是 engine 层该有的覆盖深度。

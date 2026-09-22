@@ -8,7 +8,7 @@ At this stage, production code is read-only. Only test files, fixtures, and plan
 
 ## Goal
 
-Establish a stable baseline around the parts of `Claude-code-bast` that later autonomy work is most likely to touch:
+Establish a stable baseline around the parts of `satou-code-bast` that later autonomy work is most likely to touch:
 
 - proactive state handling
 - cron task storage semantics

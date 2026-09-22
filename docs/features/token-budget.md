@@ -62,7 +62,7 @@ TOKEN_BUDGET 让用户在 prompt 中指定一个 output token 预算目标（如
  (未达 90%)   (已达 90% 或收益递减)
     │          │
     ▼          ▼
- 注入 nudge   正常结束
+ 传入 nudge   正常结束
  消息继续     发送完成事件
 ```
 
@@ -123,7 +123,7 @@ query() 函数内：
   2. 进入 while 循环
   3. 每轮结束后调用 checkTokenBudget()
   4. decision.action === 'continue' 时：
-     - 注入 meta user message（nudge）
+     - 传入 meta user message（nudge）
      - continue 回到循环顶部
   5. decision.action === 'stop' 时：
      - 记录完成事件（含 diminishingReturns 标记）
@@ -142,7 +142,7 @@ query() 函数内：
 
 #### 6. 系统提示 — `src/constants/prompts.ts:538-551`
 
-注入 `token_budget` section：
+传入 `token_budget` section：
 
 > "When the user specifies a token target (e.g., '+500k', 'spend 2M tokens', 'use 1B tokens'), your output token count will be shown each turn. Keep working until you approach the target — plan your work to fill it productively. The target is a hard minimum, not a suggestion. If you stop early, the system will automatically continue you."
 
@@ -168,7 +168,7 @@ query() 函数内：
 1. **90% 阈值而非 100%**：在 `COMPLETION_THRESHOLD = 0.9` 处停止，避免最后一轮 nudge 产生远超预算的 token
 2. **收益递减保护**：连续 3 轮 nudge 后如果每轮产出 < 500 tokens，判定模型已无实质进展，提前终止
 3. **子 agent 豁免**：AgentTool 内部的子任务不做预算检查，避免子任务重复触发续接
-4. **无条件缓存系统提示**：预算 prompt 始终注入（不随预算变化 toggle），避免每次切换预算导致 ~20K token 的 cache miss
+4. **无条件缓存系统提示**：预算 prompt 始终传入（不随预算变化 toggle），避免每次切换预算导致 ~20K token 的 cache miss
 5. **用户取消清预算**：按 Escape 取消时调用 `snapshotOutputTokensForTurn(null)`，防止残留预算触发续接
 
 ## 五、使用方式
@@ -190,7 +190,7 @@ FEATURE_TOKEN_BUDGET=1 bun run dev
 | `src/utils/tokenBudget.ts` | 73 | 正则解析 + 位置查找 + 续接消息生成 |
 | `src/query/tokenBudget.ts` | 93 | 预算追踪器 + continue/stop 决策 |
 | `src/bootstrap/state.ts:724-743` | 20 | turn 级 token 快照状态 |
-| `src/constants/prompts.ts:538-551` | 14 | 系统提示注入 |
+| `src/constants/prompts.ts:538-551` | 14 | 系统提示传入 |
 | `src/utils/attachments.ts:3830-3844` | 17 | API attachment 附加 |
 | `src/query.ts:280,1311-1358` | 48 | 主循环集成 |
 | `src/screens/REPL.tsx:2897,2963,2138` | 20 | REPL 提交/完成/取消处理 |

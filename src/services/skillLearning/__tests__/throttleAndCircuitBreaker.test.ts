@@ -7,6 +7,17 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+// MACRO is a compile-time define; provide it for tests that touch logging.
+;(globalThis as any).MACRO = {
+  VERSION: '2.1.888',
+  BUILD_TIME: '2026-04-22T00:00:00Z',
+  FEEDBACK_CHANNEL: '',
+  ISSUES_EXPLAINER: 'report issues on GitHub',
+  NATIVE_PACKAGE_URL: '',
+  PACKAGE_URL: '',
+  VERSION_CHANGELOG: '',
+}
+
 import {
   resetSkillLearningConfig,
   setSkillLearningConfigForTest,

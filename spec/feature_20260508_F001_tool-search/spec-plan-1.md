@@ -496,7 +496,7 @@
     }
     ```
   - 更新 `logSearchOutcome` 的 `queryType` 参数: `discover` 模式使用 `'keyword'` 类型（与关键词搜索共用类型，避免修改分析事件的枚举）
-  - 原因: `discover:` 模式让模型能了解延迟工具的能力（名称 + 描述 + schema），而不触发 schema 注入，适用于规划阶段或信息收集场景
+  - 原因: `discover:` 模式让模型能了解延迟工具的能力（名称 + 描述 + schema），而不触发 schema 传入，适用于规划阶段或信息收集场景
 
 - [x] 在 `ToolSearchTool.ts` 的 `call` 方法中实现关键词搜索与 TF-IDF 搜索的并行执行和结果合并
   - 位置: `ToolSearchTool.ts` 的 `call` 方法内，替换当前关键词搜索逻辑（L408-L433）

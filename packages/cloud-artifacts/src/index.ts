@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 
-// TOKEN 通过 `wrangler secret put TOKEN` 注入，wrangler types 不为 secret 生成类型
+// TOKEN 通过 `wrangler secret put TOKEN` 传入，wrangler types 不为 secret 生成类型
 // 所以这里显式扩展全局 Env（与 worker-configuration.d.ts 合并）
 declare global {
   interface Env {

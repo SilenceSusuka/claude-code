@@ -515,7 +515,7 @@ export type HostFactory = (args: {
   parentMessage: unknown
 }) => WorkflowHostContext
 
-/** 所有端口的聚合。createWorkflowTool(ports) 注入。 */
+/** 所有端口的聚合。createWorkflowTool(ports) 传入。 */
 export type WorkflowPorts = {
   agentRunner: AgentRunner
   progressEmitter: ProgressEmitter
@@ -742,7 +742,7 @@ export class ScriptError extends Error {
   }
 }
 
-/** 引擎注入脚本的钩子函数形状。 */
+/** 引擎传入脚本的钩子函数形状。 */
 export type WorkflowHooks = {
   agent: (prompt: string, opts?: Record<string, unknown>) => Promise<unknown>
   parallel: <T>(thunks: Array<() => Promise<T>>) => Promise<Array<T | null>>
@@ -1732,7 +1732,7 @@ import { WorkflowAbortedError, WorkflowError } from './errors.js'
 import { agentCallKey } from './journal.js'
 import type { WorkflowHooks } from './script.js'
 
-/** workflow() 钩子的子 workflow 执行器（由 runWorkflow 注入，避免循环依赖）。 */
+/** workflow() 钩子的子 workflow 执行器（由 runWorkflow 传入，避免循环依赖）。 */
 export type SubWorkflowRunner = (opts: {
   name?: string
   scriptPath?: string
@@ -1750,7 +1750,7 @@ type HookProgressInit =
   | { type: 'log'; message: string }
 
 export function makeHooks(ctx: EngineContext, runSubWorkflow: SubWorkflowRunner): WorkflowHooks {
-  // 所有进度事件自动注入 runId，供 adapter 路由到对应 task（多并发 workflow）
+  // 所有进度事件自动传入 runId，供 adapter 路由到对应 task（多并发 workflow）
   const emit = (init: HookProgressInit): void => {
     ctx.ports.progressEmitter.emit({ runId: ctx.runId, ...init } as ProgressEvent)
   }
@@ -2589,7 +2589,7 @@ git commit -m "feat(workflow): add self-contained WorkflowTool descriptor"
 
 ## Phase 4：核心侧 adapter 与 wiring
 
-> 本阶段代码依赖核心层真实 API（`runAgent`/`assembleToolPool`/`finalizeAgentTool`/`LocalWorkflowTask`）。包内逻辑已完全指定；本阶段的 `agentRunner` 涉及若干无法静态核实的集成点（`runAgent` 的 `querySource` 取值、`StructuredOutput` 动态注入、usage 字段），实现时以 `bunx tsc --noEmit` 为准对齐——已在代码中标注。
+> 本阶段代码依赖核心层真实 API（`runAgent`/`assembleToolPool`/`finalizeAgentTool`/`LocalWorkflowTask`）。包内逻辑已完全指定；本阶段的 `agentRunner` 涉及若干无法静态核实的集成点（`runAgent` 的 `querySource` 取值、`StructuredOutput` 动态传入、usage 字段），实现时以 `bunx tsc --noEmit` 为准对齐——已在代码中标注。
 
 ### Task 16：hostHandle 与进度存储
 
@@ -2814,7 +2814,7 @@ function makeHostFactory(): WorkflowPorts['hostFactory'] {
         agentId: ctx.agentId!,
       }),
       cwd: getCwd(),
-      budgetTotal: null, // v1：无 turn 级预算注入点；engine 支持 budget 但此处 null
+      budgetTotal: null, // v1：无 turn 级预算传入点；engine 支持 budget 但此处 null
       toolUseId: ctx.toolUseId,
     }
   }
@@ -2847,7 +2847,7 @@ async function runWorkflowSubAgent(
   const workerTools = assembleToolPool(workerPermissionContext, appState.mcp.tools)
 
   // schema → 通过 appendSystemPrompt 传 JSON Schema 指令；非交互模式下 StructuredOutput 已启用。
-  // （完整动态 schema 注入需扩展 SyntheticOutputTool；v1 用指令 + 结果侧校验。）
+  // （完整动态 schema 传入需扩展 SyntheticOutputTool；v1 用指令 + 结果侧校验。）
   const promptText = params.schema
     ? `${params.prompt}\n\nYou MUST return your final answer by calling the StructuredOutput tool with a value matching this JSON Schema:\n${JSON.stringify(params.schema)}`
     : params.prompt
@@ -3358,7 +3358,7 @@ git commit -m "chore(workflow): remove legacy checklist WorkflowTool, precheck p
 - 并发上限（16/1000/4096）→ Task 5 + hooks 内 MAX_TOTAL_AGENTS/MAX_ITEMS_PER_CALL。✓
 - journal/resume（顺序重放、脚本变更全重跑）→ Task 7（journal）、Task 12（命中/发散）、Task 13（resume）。✓
 - token budget 硬上限 → Task 8（budget）、Task 12（agent 前置 assertCanSpend）。✓
-- schema 结构化输出 → Task 9（校验）、Task 17（adapter 注入指令 + 提取）。✓
+- schema 结构化输出 → Task 9（校验）、Task 17（adapter 传入指令 + 提取）。✓
 - 进度流 → Task 11（events）、Task 16（progressStore）、Task 19（/workflows）。✓
 - 后台任务生命周期 → Task 17（taskRegistrar 委托 LocalWorkflowTask）。✓
 - named workflow + `/<name>` + `/workflows` 进度查看 → Task 19。✓
@@ -3370,7 +3370,7 @@ git commit -m "chore(workflow): remove legacy checklist WorkflowTool, precheck p
 **3. 类型一致性：** 已统一修正——
 - `TaskRegistrar.register(opts, host) → { runId, signal }`（Task 4 描述符 Task 15 一致调用）。
 - `WorkflowHostContext = { handle, cwd, budgetTotal, toolUseId? }`（无 signal）。
-- `ProgressEvent` 所有变体携带 `runId`（hooks 用 `emit` helper 注入，run_done 显式带）。
+- `ProgressEvent` 所有变体携带 `runId`（hooks 用 `emit` helper 传入，run_done 显式带）。
 - `AgentRunResult` 联合（ok/skipped/dead）在 hooks/journal/adapter 一致。
 
 ---

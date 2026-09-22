@@ -1,12 +1,12 @@
 # Remote Control Server (RCS)
 
-Remote Control Server 是 Claude Code 的远程控制后端，允许你通过浏览器 Web UI 远程监控和操作 Claude Code 会话。
+Remote Control Server 是 satou code 的远程控制后端，允许你通过浏览器 Web UI 远程监控和操作 satou code 会话。
 
 ## 功能
 
-- **会话管理** — 创建、监控、归档 Claude Code 会话
+- **会话管理** — 创建、监控、归档 satou code 会话
 - **实时消息流** — WebSocket / SSE 双向传输，实时查看对话和工具调用
-- **权限审批** — 在 Web UI 中审批 Claude Code 的工具权限请求
+- **权限审批** — 在 Web UI 中审批 satou code 的工具权限请求
 - **多环境管理** — 注册多个运行环境，支持心跳和断线重连
 - **认证安全** — API Key + JWT 双层认证
 
@@ -44,11 +44,11 @@ docker run -d \
 | `RCS_JWT_EXPIRES_IN` | `3600` | JWT 令牌有效期（秒） |
 | `RCS_DISCONNECT_TIMEOUT` | `300` | 断线判定超时（秒） |
 
-## Claude Code 客户端配置
+## satou code 客户端配置
 
 ### 连接到自托管服务器
 
-在 Claude Code 所在环境设置以下变量：
+在 satou code 所在环境设置以下变量：
 
 ```bash
 # 指向你的 RCS 服务器地址
@@ -139,7 +139,7 @@ rcs.example.com {
 
 ```
 ┌─────────────┐     WebSocket/SSE      ┌──────────────────┐
-│  Claude Code │ ◄──────────────────► │  Remote Control  │
+│  satou code │ ◄──────────────────► │  Remote Control  │
 │  (Bridge CLI)│     HTTP API          │     Server       │
 └─────────────┘                        │                  │
                                        │  ┌────────────┐  │

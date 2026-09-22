@@ -1,12 +1,12 @@
 # LSP Integration
 
-Claude Code 内置了 Language Server Protocol (LSP) 集成，提供代码智能功能（跳转定义、查找引用、悬停信息、文档符号等）和被动的诊断反馈。
+satou code 内置了 Language Server Protocol (LSP) 集成，提供代码智能功能（跳转定义、查找引用、悬停信息、文档符号等）和被动的诊断反馈。
 
 ## 快速开始
 
 ### 1. 安装 LSP 插件
 
-在 Claude Code REPL 中使用 `/plugin` 命令搜索并安装 LSP 插件：
+在 satou code REPL 中使用 `/plugin` 命令搜索并安装 LSP 插件：
 
 ```
 /plugin
@@ -30,7 +30,7 @@ ENABLE_LSP_TOOL=1 bun run dev
 
 ## 自动推荐
 
-除了手动 `/plugin` 搜索安装外，Claude Code 会在编辑文件时自动检测：
+除了手动 `/plugin` 搜索安装外，satou code 会在编辑文件时自动检测：
 
 1. 监听 `fileHistory.trackedFiles`，发现有新文件被编辑
 2. 扫描已安装的 marketplace，找到声明支持该文件扩展名的 LSP 插件
@@ -112,10 +112,10 @@ LSP Server ──publishDiagnostics──▶ passiveFeedback.ts
                                           │
                                           ▼
                                    Attachment System
-                                   (异步注入到对话)
+                                   (异步传入到对话)
 ```
 
-LSP 服务器会异步推送 `textDocument/publishDiagnostics` 通知，经去重和容量限制后作为 attachment 注入到 Claude 的对话上下文中。
+LSP 服务器会异步推送 `textDocument/publishDiagnostics` 通知，经去重和容量限制后作为 attachment 传入到 Claude 的对话上下文中。
 
 ## 核心模块
 

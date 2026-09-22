@@ -1,45 +1,45 @@
 import type { LocalCommandCall } from '../../types/command.js'
 import {
-  KEYSMITH_PROFILE_NAME,
-  importKeysmithProfile,
-  isKeysmithActive,
-  resolveKeysmithProfilePath,
-} from '../../utils/keysmithBridge.js'
+  CORE_RULES_PROFILE_NAME,
+  importCoreRulesProfile,
+  isCoreRulesActive,
+  resolveCoreRulesProfilePath,
+} from '../../utils/coreRulesBridge.js'
 import {
   getFollowPromptDirs,
   loadFollowPrompt,
   setActiveFollowProfileName,
-} from '../../utils/instructionFollow.js'
+} from '../../utils/coreRulesFollow.js'
 
 function formatStatus(): string {
   const dirs = getFollowPromptDirs()
-  const path = resolveKeysmithProfilePath(dirs)
-  const active = isKeysmithActive()
-  const loaded = loadFollowPrompt(KEYSMITH_PROFILE_NAME, dirs)
+  const path = resolveCoreRulesProfilePath(dirs)
+  const active = isCoreRulesActive()
+  const loaded = loadFollowPrompt(CORE_RULES_PROFILE_NAME, dirs)
 
   const lines: string[] = []
   if (active && loaded) {
     lines.push(
       `Active: ${loaded.name} (${loaded.source})`,
       `File: ${loaded.path}`,
-      'Injected on every API call as system policy + trailing recency reminder.',
+      'Applied on every API call as system policy + trailing recency reminder.',
     )
   } else if (active) {
     lines.push(
-      `Profile "${KEYSMITH_PROFILE_NAME}" is active, but no file found.`,
+      `Profile "${CORE_RULES_PROFILE_NAME}" is active, but no file found.`,
     )
   } else {
-    lines.push('keysmith instruction follow is OFF.')
+    lines.push('Core Rules is OFF.')
   }
 
   lines.push('', `Profile file: ${path}`)
   lines.push(
     '',
     'Usage:',
-    '  /keysmith            status',
-    '  /keysmith import     write keysmith template + activate',
-    '  /keysmith reimport   overwrite profile with template + activate',
-    '  /keysmith off        deactivate',
+    '  /corerules            status',
+    '  /corerules import     write Core Rules template + activate',
+    '  /corerules reimport   overwrite profile with template + activate',
+    '  /corerules off        deactivate',
   )
   return lines.join('\n')
 }
@@ -55,20 +55,19 @@ export const call: LocalCommandCall = async args => {
     setActiveFollowProfileName(null)
     return {
       type: 'text',
-      value:
-        'keysmith instruction follow OFF. Sticky prompt will not be injected.',
+      value: 'Core Rules OFF. Sticky prompt will not be applied.',
     }
   }
 
   if (trimmed === 'import' || trimmed === 'reimport' || trimmed === 'update') {
-    const result = importKeysmithProfile()
+    const result = importCoreRulesProfile()
     if ('error' in result) {
       return { type: 'text', value: result.error }
     }
     return {
       type: 'text',
       value: [
-        `keysmith profile written + activated: ${KEYSMITH_PROFILE_NAME}`,
+        `Core Rules profile written + activated: ${CORE_RULES_PROFILE_NAME}`,
         `File: ${result.path}`,
         'Edit the file anytime; the next API call reloads it.',
       ].join('\n'),

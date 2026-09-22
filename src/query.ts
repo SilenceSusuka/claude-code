@@ -59,11 +59,11 @@ import {
 import { generateToolUseSummary } from './services/toolUseSummary/toolUseSummaryGenerator.js'
 import { prependUserContext, appendSystemContext } from './utils/api.js'
 import {
-  applyInstructionFollowToSystem,
+  applyCoreRulesToSystem,
   formatFollowTailContent,
   loadFollowPrompt,
-} from './utils/instructionFollow.js'
-import { appendInstructionPrimeTurns } from './utils/instructionPrime.js'
+} from './utils/coreRulesFollow.js'
+import { appendCoreRulesTurns } from './utils/coreRules.js'
 import {
   createAttachmentMessage,
   filterDuplicateMemoryAttachments,
@@ -650,11 +650,11 @@ async function* queryLoop(
       messagesForQuery = collapseResult.messages
     }
 
-    // Sticky instruction-follow: re-read profile each hop so file edits
+    // Sticky Core Rules: re-read profile each hop so file edits
     // apply on the next tool-loop iteration without restarting the session.
     const followPrompt = loadFollowPrompt()
     const fullSystemPrompt = asSystemPrompt(
-      applyInstructionFollowToSystem(
+      applyCoreRulesToSystem(
         appendSystemContext(systemPrompt, systemContext),
         followPrompt,
       ),
@@ -922,7 +922,7 @@ async function* queryLoop(
               ]
             : messagesForModel
           for await (const message of deps.callModel({
-            messages: appendInstructionPrimeTurns(messagesWithFollow),
+            messages: appendCoreRulesTurns(messagesWithFollow),
             systemPrompt: fullSystemPrompt,
             thinkingConfig: toolUseContext.options.thinkingConfig,
             tools: toolUseContext.options.tools,

@@ -22,9 +22,9 @@
 ## 2. 关键决策（brainstorming 结论）
 
 1. **范围**：完整忠实引擎——全部钩子 + schema 结构化输出 + 并发上限（16/1000/4096）+ journaling/resume + token budget + worktree 隔离 + named-workflow 加载 + 进度流到 `/workflows`。
-2. **包边界**：**严格端口适配（依赖倒置）**。`packages/workflow-engine/` 零 `src/*` / `builtin-tools` 运行时导入；只声明端口接口；核心侧提供一个 adapter 模块实现这些接口；`tools.ts` 装配时注入。
+2. **包边界**：**严格端口适配（依赖倒置）**。`packages/workflow-engine/` 零 `src/*` / `builtin-tools` 运行时导入；只声明端口接口；核心侧提供一个 adapter 模块实现这些接口；`tools.ts` 装配时传入。
 3. **文件模型**：`.claude/workflows/<name>.ts|.js|.mjs` 脚本文件 → 命名 workflow（`Workflow` 工具 `name` 参数解析到它）+ 生成 `/<name>` 斜杠命令；`/workflows` 变为实时进度查看器。**删除** 现有 `.md`/`.yaml` 清单逻辑。
-4. **执行路径**：**async 函数包装 + 信号量 + 注入端口**（方案 A）。进程内 async 模型，与 `runAgent` 的 async generator 天然契合，端口可 mock 测试。不用 `vm` 沙箱或 worker 进程。
+4. **执行路径**：**async 函数包装 + 信号量 + 传入端口**（方案 A）。进程内 async 模型，与 `runAgent` 的 async generator 天然契合，端口可 mock 测试。不用 `vm` 沙箱或 worker 进程。
 
 ## 3. 架构与依赖方向
 
@@ -34,7 +34,7 @@
 │  声明端口（接口），持有引擎/钩子/并发/journal/budget/schema │
 │  + 自包含的 WorkflowTool 描述符（zod schema/desc/prompt）    │
 └──────────────▲──────────────────────────▲───────────────────┘
-               │ 实现（implements）        │ 注入（DI）
+               │ 实现（implements）        │ 传入（DI）
 ┌──────────────┴──────────────────────────┴───────────────────┐
 │  src/workflow/  ← 核心侧薄层                                 │
 │  adapter.ts: 用 runAgent/assembleToolPool/LocalWorkflowTask │
@@ -50,7 +50,7 @@
 
 | 端口 | 职责 | 核心侧 adapter 实现 |
 |---|---|---|
-| `AgentRunner` | `agent()` 后端：`runAgentToResult(params, hostHandle) → AgentRunResult` | 委托 `runAgent` + `assembleToolPool`；schema 时注入 StructuredOutput 工具；`finalizeAgentTool` 抽取最终消息 + usage |
+| `AgentRunner` | `agent()` 后端：`runAgentToResult(params, hostHandle) → AgentRunResult` | 委托 `runAgent` + `assembleToolPool`；schema 时传入 StructuredOutput 工具；`finalizeAgentTool` 抽取最终消息 + usage |
 | `ProgressEmitter` | `emit(event)` 推进度事件 | 写 `LocalWorkflowTaskState.progress` + `rootSetAppState` |
 | `TaskRegistrar` | 后台任务生命周期 + 读 `pendingAgentAction` | 复用 `LocalWorkflowTask` API |
 | `JournalStore` | journal 读写（按 runId） | 文件 fs（`.claude/workflow-runs/<runId>/journal.jsonl`），走端口便于 mock |
@@ -123,7 +123,7 @@ packages/workflow-engine/
 
 ### 4.4 Budget（`budget.ts`）
 
-- `budget.total`：来自用户 `+500k` 式 turn 级 token 指令，由 **host/turn 上下文注入**（adapter 从 turn 的 token 指令读取，经 `HostHandle` 传入），**不是** 工具 input 参数。无指令则 `null`。
+- `budget.total`：来自用户 `+500k` 式 turn 级 token 指令，由 **host/turn 上下文传入**（adapter 从 turn 的 token 指令读取，经 `HostHandle` 传入），**不是** 工具 input 参数。无指令则 `null`。
 - `budget.spent()`：本 turn 所有 agent 输出 token 之和（`AgentRunResult.usage`，adapter 从 subagent usage 填）。
 - `budget.remaining()`：`max(0, total - spent)`，无 total 则 `Infinity`。
 - **硬上限**：`spent()` 达 `total` 后，`agent()` 抛错。预算是主循环与 workflow 共享池。
@@ -186,7 +186,7 @@ type AgentRunResult =
 
 `createWorkflowAdapter()` 返回端口实现：
 
-- **AgentRunner.runAgentToResult(params, hostHandle)**：cast 句柄→`{toolUseContext, canUseTool, assistantMessage}`；按 `params.agentType` 从 registry 解析 agentDefinition（缺省=通用 workflow 子 agent）；`assembleToolPool`；有 schema→注入 StructuredOutput 工具+系统指令；调 `runAgent` 收消息→`finalizeAgentTool` 抽 text+usage；schema→解析校验返回对象；处理 `pendingAgentAction`(skip)→`null`、终态死亡→`null`；返回 `{kind:'ok', text/object, usage}`。
+- **AgentRunner.runAgentToResult(params, hostHandle)**：cast 句柄→`{toolUseContext, canUseTool, assistantMessage}`；按 `params.agentType` 从 registry 解析 agentDefinition（缺省=通用 workflow 子 agent）；`assembleToolPool`；有 schema→传入 StructuredOutput 工具+系统指令；调 `runAgent` 收消息→`finalizeAgentTool` 抽 text+usage；schema→解析校验返回对象；处理 `pendingAgentAction`(skip)→`null`、终态死亡→`null`；返回 `{kind:'ok', text/object, usage}`。
 - **ProgressEmitter**：写 `LocalWorkflowTaskState.progress` + `rootSetAppState`。
 - **TaskRegistrar**：复用现有 `registerLocalWorkflowTask/complete/fail/kill` + 读 `pendingAgentAction`。
 - **JournalStore / Logger / PermissionGate**：fs / `logForDebugging`+`logEvent` / abort+pendingAction。
@@ -228,4 +228,4 @@ type AgentRunResult =
 - **非密码学沙箱**：函数参数 shadow 全局 `Date`/`Math`，`globalThis.Date` 仍可达。可接受——目标是阻断 resume 破坏性的非确定性，不是隔离恶意代码。若未来需强隔离再上 `vm`/worker（方案 B/C）。
 - **resume 正确性依赖确定性执行**：用户脚本若绕过 shim 用 `globalThis.Date` 制造非确定性，resume 可能命中错缓存。属可接受的边界，文档提示。
 - **预算共享语义**：`budget.spent()` 与主循环的 token 计数共享，需 adapter 正确上报 subagent usage；若 provider 不报 usage 则 budget 降级为 `Infinity`。
-- **StructuredOutput 工具**：核心侧需存在/实现一个按 JSON Schema 强制结构化输出的子 agent 工具（注入 + 解析）。若当前无现成实现，wiring 阶段补一个最小版本。
+- **StructuredOutput 工具**：核心侧需存在/实现一个按 JSON Schema 强制结构化输出的子 agent 工具（传入 + 解析）。若当前无现成实现，wiring 阶段补一个最小版本。

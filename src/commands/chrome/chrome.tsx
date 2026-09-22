@@ -122,18 +122,18 @@ function ClaudeInChromeMenu({
   const isDisabled = isWSL || ((process.env.USER_TYPE as string) !== 'ant' && !isClaudeAISubscriber);
 
   return (
-    <Dialog title="Claude in Chrome (Beta)" onCancel={() => onDone()} color="chromeYellow">
+    <Dialog title="小砂糖 in Chrome (Beta)" onCancel={() => onDone()} color="chromeYellow">
       <Box flexDirection="column" gap={1}>
         <Text>
-          Claude in Chrome works with the Chrome extension to let you control your browser directly from Claude Code.
+          小砂糖 in Chrome works with the Chrome extension to let you control your browser directly from satou code.
           Navigate websites, fill forms, capture screenshots, record GIFs, and debug with console logs and network
           requests.
         </Text>
 
-        {isWSL && <Text color="error">Claude in Chrome is not supported in WSL at this time.</Text>}
+        {isWSL && <Text color="error">小砂糖 in Chrome is not supported in WSL at this time.</Text>}
 
         {(process.env.USER_TYPE as string) !== 'ant' && !isClaudeAISubscriber && (
-          <Text color="error">Claude in Chrome requires a claude.ai subscription.</Text>
+          <Text color="error">小砂糖 in Chrome requires a claude.ai subscription.</Text>
         )}
 
         {!isDisabled && (

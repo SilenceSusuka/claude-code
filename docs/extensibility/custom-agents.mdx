@@ -1,6 +1,6 @@
 ---
 title: "自定义 Agent - 从 Markdown 到运行时的完整链路"
-description: "揭秘 Claude Code 自定义 Agent 完整链路：Agent 定义的 Markdown 数据模型、三种加载来源、工具过滤策略和与 AgentTool 的联动机制。"
+description: "揭秘 satou code 自定义 Agent 完整链路：Agent 定义的 Markdown 数据模型、三种加载来源、工具过滤策略和与 AgentTool 的联动机制。"
 keywords: ["自定义 Agent", "Agent 定义", "Markdown Agent", "Agent 配置", "角色定制"]
 ---
 
@@ -8,7 +8,7 @@ keywords: ["自定义 Agent", "Agent 定义", "Markdown Agent", "Agent 配置", 
 
 ## Agent 定义的三种来源
 
-Claude Code 的 Agent 不仅仅来自用户自定义——系统有三类来源，按优先级合并：
+satou code 的 Agent 不仅仅来自用户自定义——系统有三类来源，按优先级合并：
 
 | 来源 | 位置 | 优先级 |
 |------|------|--------|
@@ -73,7 +73,7 @@ color: "blue"                       # 终端中的 Agent 颜色标识
 
 - **`tools`**：通过 `parseAgentToolsFromFrontmatter()` 解析，支持逗号分隔字符串或数组
 - **`model: "inherit"`**：使用主线程的模型（区分大小写，只有小写 "inherit" 有效）
-- **`memory`**：启用后自动注入 `Write`/`Edit`/`Read` 工具（即使 `tools` 未包含），并在 system prompt 末尾追加 memory 指令
+- **`memory`**：启用后自动传入 `Write`/`Edit`/`Read` 工具（即使 `tools` 未包含），并在 system prompt 末尾追加 memory 指令
 - **`isolation: "remote"`**：仅在 Anthropic 内部可用（`USER_TYPE === 'ant'`），外部构建只支持 `worktree`
 - **`background`**：`true` 使 Agent 始终在后台运行，主线程不等待结果
 
@@ -122,7 +122,7 @@ color: "blue"                       # 终端中的 Agent 颜色标识
 - **`tools` 未指定**：Agent 可以使用所有工具（默认全能）
 - **`tools` 指定**：只能使用列出的工具
 - **`disallowedTools`**：即使 `tools` 未指定，这些工具也被禁止
-- **自动注入**：`memory` 启用时自动添加 `Write`/`Edit`/`Read`
+- **自动传入**：`memory` 启用时自动添加 `Write`/`Edit`/`Read`
 
 以内置 Explore Agent 为例：
 
@@ -137,7 +137,7 @@ disallowedTools: [
 ]
 ```
 
-## System Prompt 的注入方式
+## System Prompt 的传入方式
 
 Agent 的 system prompt 通过 `getSystemPrompt()` 闭包延迟生成：
 
@@ -180,9 +180,9 @@ AgentTool.call({ subagent_type: "reviewer", ... })
   ↓
 6. 构建隔离环境（如果 isolation === "worktree"）
   ↓
-7. 注入 system prompt（getSystemPrompt()）
+7. 传入 system prompt（getSystemPrompt()）
   ↓
-8. 注入 initialPrompt（如果定义了）
+8. 传入 initialPrompt（如果定义了）
   ↓
 9. 启动子 Agent 循环（forkSubagent / runAgent）
 ```
@@ -195,7 +195,7 @@ AgentTool.call({ subagent_type: "reviewer", ... })
 | **Explore** | `Explore` | 代码搜索专家 | 只读（无 Write/Edit） | haiku（外部） |
 | **Plan** | `Plan` | 规划专家 | 只读 + ExitPlanMode | inherit |
 | **Verification** | `verification` | 结果验证 | 由 feature flag 控制 | — |
-| **Code Guide** | `claude-code-guide` | Claude Code 使用指南 | 只读 | — |
+| **Code Guide** | `claude-code-guide` | satou code 使用指南 | 只读 | — |
 | **Statusline Setup** | `statusline-setup` | 终端状态栏配置 | 有限 | — |
 
 SDK 入口（`sdk-ts`/`sdk-py`/`sdk-cli`）不加载 Code Guide Agent。环境变量 `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS` 可以完全禁用内置 Agent，给 SDK 用户提供空白画布。
@@ -208,4 +208,4 @@ SDK 入口（`sdk-ts`/`sdk-py`/`sdk-cli`）不加载 Code Guide Agent。环境�
 - **`project`**：当前项目所有用户共享
 - **`user`**：所有项目共享
 
-Memory 通过 `loadAgentMemoryPrompt()` 注入到 system prompt 末尾，包含读写记忆的指令。Agent Memory Snapshot 机制在项目间同步 `user` 级记忆。
+Memory 通过 `loadAgentMemoryPrompt()` 传入到 system prompt 末尾，包含读写记忆的指令。Agent Memory Snapshot 机制在项目间同步 `user` 级记忆。

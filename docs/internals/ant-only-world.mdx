@@ -1,6 +1,6 @@
 ---
 title: "Ant 特权世界 - Anthropic 员工专属功能"
-description: "完整记录 Claude Code 身份门控层：USER_TYPE === 'ant' 时解锁的专属工具、命令、API 和代号体系，揭示内外部构建的差异。"
+description: "完整记录 satou code 身份门控层：USER_TYPE === 'ant' 时解锁的专属工具、命令、API 和代号体系，揭示内外部构建的差异。"
 keywords: ["Ant 特权", "USER_TYPE", "身份门控", "内部功能", "Anthropic 员工"]
 ---
 
@@ -8,14 +8,14 @@ keywords: ["Ant 特权", "USER_TYPE", "身份门控", "内部功能", "Anthropic
 
 ## 什么是 Ant
 
-`USER_TYPE` 是一个构建时常量，通过 Bun 打包器的 `--define` 注入。在 Anthropic 的内部构建中它被设为 `'ant'`，在公开发布的版本中是 `'external'`：
+`USER_TYPE` 是一个构建时常量，通过 Bun 打包器的 `--define` 传入。在 Anthropic 的内部构建中它被设为 `'ant'`，在公开发布的版本中是 `'external'`：
 
 ```typescript
 // 反编译版本（src/types/global.d.ts 第 63 行）
 // Build-time constants BUILD_TARGET/BUILD_ENV/INTERFACE_TYPE — removed (zero runtime usage)
 ```
 
-`BUILD_TARGET` 等构建时常量在反编译版本中已被移除。`USER_TYPE` 通过 Bun 的 `--define` 或环境变量注入，Bun 会进行**常量折叠**——所有 `process.env.USER_TYPE === 'ant'` 在外部构建中直接变为 `false`，后续代码被 DCE 移除。但在反编译版本中，这些代码保留完整。
+`BUILD_TARGET` 等构建时常量在反编译版本中已被移除。`USER_TYPE` 通过 Bun 的 `--define` 或环境变量传入，Bun 会进行**常量折叠**——所有 `process.env.USER_TYPE === 'ant'` 在外部构建中直接变为 `false`，后续代码被 DCE 移除。但在反编译版本中，这些代码保留完整。
 
 `USER_TYPE === 'ant'` 在代码库中出现 **351+ 次**（跨 163 个文件），另有 `!== 'ant'` 59 次（跨 38 个文件），总计 **410+ 处引用**，控制着工具、命令、API、UI 等方方面面。
 
@@ -94,17 +94,17 @@ const SuggestBackgroundPRTool =
 
 ## Beta API Headers
 
-Claude Code 向 API 发送的 beta headers 分布在 `src/constants/betas.ts`（主注册表）和其他文件中，按可见性分为以下几类：
+satou code 向 API 发送的 beta headers 分布在 `src/constants/betas.ts`（主注册表）和其他文件中，按可见性分为以下几类：
 
 ### 公开 Headers（所有构建均发送）
 
 | Header | 功能 | 额外条件 |
 |--------|------|----------|
-| `claude-code-20250219` | Claude Code 标识 | 非 Haiku 时始终发送；Haiku 在 agentic 模式下也发送 |
-| `effort-2025-11-24` | 推理强度控制 | 动态注入 |
-| `task-budgets-2026-03-13` | 任务预算 | 始终通过 `addAgenticBetas()` 注入 |
-| `fast-mode-2026-02-01` | 快速模式 | 通过 sticky-on latch 动态注入 |
-| `advisor-tool-2026-03-01` | 顾问工具 | 启用 advisor 时动态注入 |
+| `claude-code-20250219` | satou code 标识 | 非 Haiku 时始终发送；Haiku 在 agentic 模式下也发送 |
+| `effort-2025-11-24` | 推理强度控制 | 动态传入 |
+| `task-budgets-2026-03-13` | 任务预算 | 始终通过 `addAgenticBetas()` 传入 |
+| `fast-mode-2026-02-01` | 快速模式 | 通过 sticky-on latch 动态传入 |
+| `advisor-tool-2026-03-01` | 顾问工具 | 启用 advisor 时动态传入 |
 | `advanced-tool-use-2025-11-20` | 工具搜索（1P） | Claude API / Foundry |
 | `tool-search-tool-2025-10-19` | 工具搜索（3P） | Vertex / Bedrock |
 
@@ -167,7 +167,7 @@ Anthropic 有浓厚的"动物命名"文化：
 
 | 代号 | 身份 | 出处 |
 |------|------|------|
-| **Tengu**（天狗） | Claude Code 项目代号 | 所有 GrowthBook flags 的 `tengu_` 前缀、分析事件名称 |
+| **Tengu**（天狗） | satou code 项目代号 | 所有 GrowthBook flags 的 `tengu_` 前缀、分析事件名称 |
 | **Capybara**（水豚） | 模型代号 | `src/constants/prompts.ts` 中被 Undercover Mode 屏蔽的名称 |
 | **Fennec**（耳廓狐） | 已退役模型别名 | `src/migrations/migrateFennecToOpus.ts`——曾用名已迁移到 Opus |
 

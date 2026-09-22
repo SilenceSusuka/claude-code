@@ -4,7 +4,7 @@ const follow = {
   type: 'local',
   name: 'follow',
   description:
-    'Switch editable network-layer instruction-follow profiles (code, roleplay, …)',
+    'Switch editable network-layer Core Rules profiles (code, roleplay, …)',
   argumentHint: '[list|off|new <name>|<profile>]',
   immediate: true,
   disableModelInvocation: true,

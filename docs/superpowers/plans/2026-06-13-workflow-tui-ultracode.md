@@ -1015,7 +1015,7 @@ function makeHostFactory(): WorkflowPorts['hostFactory'] {
         agentId: ctx.agentId,
       }),
       cwd: getCwd(),
-      budgetTotal: null, // turn 级预算注入点（未来从 settings 读）
+      budgetTotal: null, // turn 级预算传入点（未来从 settings 读）
       toolUseId: ctx.toolUseId,
     }
   }
@@ -1267,7 +1267,7 @@ export function getWorkflowService(): WorkflowService {
   return cached
 }
 
-/** 测试用：注入 ports。 */
+/** 测试用：传入 ports。 */
 export function makeService(ports: WorkflowPorts, store: ProgressStore): WorkflowService {
   const runsDir = () =>
     process.env.WORKFLOW_RUNS_DIR ?? `${getProjectRoot()}/.claude/workflow-runs`
@@ -1896,7 +1896,7 @@ Create `src/skills/bundled/ultracode/SKILL.md`:
 ```markdown
 ---
 name: ultracode
-description: 进入多 agent workflow 编排模式——何时用 workflow、编排原语、质量模式、确定性约束、后端路由、resume/budget、文件与命令。调用即把这套工作法注入上下文。
+description: 进入多 agent workflow 编排模式——何时用 workflow、编排原语、质量模式、确定性约束、后端路由、resume/budget、文件与命令。调用即把这套工作法传入上下文。
 user-invocable: true
 ---
 
@@ -1985,7 +1985,7 @@ git commit -m "feat(workflow): /ultracode knowledge skill (orchestration playboo
 
 ## `/ultracode` skill
 
-`/ultracode` 注入多 agent workflow 编排工作法（何时用、原语、质量模式、确定性约束、路由、resume/budget）。纯知识，零运行时副作用。
+`/ultracode` 传入多 agent workflow 编排工作法（何时用、原语、质量模式、确定性约束、路由、resume/budget）。纯知识，零运行时副作用。
 ```
 
 - [ ] **Step 2：提交**
@@ -2007,7 +2007,7 @@ Expected: typecheck + lint fix + test 全绿。
 - [ ] **（可选）端到端冒烟**
 
 Run: `FEATURE_WORKFLOW_SCRIPTS=1 bun run dev`，REPL 内：
-1. `/ultracode` → 注入 playbook。
+1. `/ultracode` → 传入 playbook。
 2. 通过 Workflow 工具 `name: <某命名 workflow>` 启动。
 3. `/workflows` → 看到该 run，j/k 选中，右栏显示 phase/agent 实时刷新。
 4. `x` kill → run 变 killed。

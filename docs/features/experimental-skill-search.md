@@ -23,7 +23,7 @@ EXPERIMENTAL_SKILL_SEARCH 提供 DiscoverSkills 工具，根据当前任务语�
 | 本地搜索 | `src/services/skillSearch/localSearch.ts` | **Stub** | 空操作缓存 |
 | 功能检查 | `src/services/skillSearch/featureCheck.ts` | **Stub** | `isSkillSearchEnabled => false` |
 | SkillTool 集成 | `src/tools/SkillTool/SkillTool.ts` | **布线** | 动态加载所有远程技能模块 |
-| 提示集成 | `src/constants/prompts.ts` | **布线** | DiscoverSkills schema 注入 |
+| 提示集成 | `src/constants/prompts.ts` | **布线** | DiscoverSkills schema 传入 |
 
 ### 2.2 预期数据流
 

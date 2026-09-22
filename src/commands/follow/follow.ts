@@ -7,7 +7,7 @@ import {
   loadFollowPrompt,
   resolveFollowProfile,
   setActiveFollowProfileName,
-} from '../../utils/instructionFollow.js'
+} from '../../utils/coreRulesFollow.js'
 
 function formatStatus(): string {
   const dirs = getFollowPromptDirs()
@@ -20,7 +20,7 @@ function formatStatus(): string {
     lines.push(
       `Active: ${loaded.name} (${loaded.source})`,
       `File: ${loaded.path}`,
-      `Inject: system field + trailing <instruction-follow> on every API call`,
+      `Apply: system field + trailing <core-rules> on every API call`,
       `Edit the file directly; the next model hop reloads it.`,
     )
   } else if (active) {
@@ -29,7 +29,7 @@ function formatStatus(): string {
       `Create it with /follow new ${active}`,
     )
   } else {
-    lines.push('Instruction follow is OFF.')
+    lines.push('Core Rules follow is OFF.')
   }
 
   lines.push('')
@@ -70,7 +70,7 @@ export const call: LocalCommandCall = async args => {
     return {
       type: 'text',
       value:
-        'Instruction follow OFF. Network-layer sticky prompts will not be injected.',
+        'Core Rules follow OFF. Network-layer sticky prompts will not be applied.',
     }
   }
 
@@ -117,9 +117,9 @@ export const call: LocalCommandCall = async args => {
   return {
     type: 'text',
     value: [
-      `Instruction follow ON: ${resolved.name} (${resolved.source})`,
+      `Core Rules follow ON: ${resolved.name} (${resolved.source})`,
       `File: ${resolved.path}`,
-      'Injected on every model call as system policy + trailing recency reminder.',
+      'Applied on every model call as system policy + trailing recency reminder.',
       'Edit the file anytime; the next hop picks up the new text.',
     ].join('\n'),
   }

@@ -1,8 +1,8 @@
-# SSH Remote — 远程主机运行 Claude Code
+# SSH Remote — 远程主机运行 satou code
 
 ## 概述
 
-SSH Remote 提供两种方式在远程 Linux 主机上运行 Claude Code：
+SSH Remote 提供两种方式在远程 Linux 主机上运行 satou code：
 
 1. **SSH Remote 模块**（`ccb ssh <host>`）— 本地 REPL + 远程工具执行，自动部署二进制 + 认证隧道
 2. **直接 SSH 运行**（`ssh <host> -t ccb`）— 远程已安装 ccb，直接启动交互式会话
@@ -48,7 +48,7 @@ SSH Remote 提供两种方式在远程 Linux 主机上运行 Claude Code：
 │     │                                              │
 │     ├── API 请求 → ANTHROPIC_BASE_URL              │
 │     │   → SSH 反向隧道 → 本地 AuthProxy             │
-│     │   → 注入真实凭据 → api.anthropic.com          │
+│     │   → 传入真实凭据 → api.anthropic.com          │
 │     │                                              │
 │     └── 工具执行 (Bash/Read/Write/...)              │
 │         直接在远端文件系统上操作                      │
@@ -274,7 +274,7 @@ npm install -g .
 
 ```bash
 ccb --version
-# → x.x.x (Claude Code)
+# → x.x.x (satou code)
 ```
 
 ### 远端部署（全流程）
@@ -350,7 +350,7 @@ src/ssh/
 
 - **AuthProxy** 在本地监听（Unix socket 或 TCP），接收远端 CLI 的 API 请求
 - 通过 SSH `-R` 反向端口转发隧道到远端
-- AuthProxy 注入本地真实凭据（API key 或 OAuth token），转发到 `api.anthropic.com`
+- AuthProxy 传入本地真实凭据（API key 或 OAuth token），转发到 `api.anthropic.com`
 - `ANTHROPIC_AUTH_NONCE` header 防止未授权访问（nonce 通过环境变量传递给远端 CLI，远端 CLI 在每个 API 请求中携带此 header）
 
 ### waitForInit vs 存活检查
@@ -410,7 +410,7 @@ ssh: connect to host x.x.x.x port 22: Connection timed out
 ### 403 Forbidden（SSH Remote 模块）
 
 AuthProxy 的 nonce 验证失败。确认：
-1. 远端 CLI 版本包含 nonce header 注入修复
+1. 远端 CLI 版本包含 nonce header 传入修复
 2. `ANTHROPIC_AUTH_NONCE` 环境变量正确传递到远端
 3. `src/services/api/client.ts` 中 `x-auth-nonce` header 已启用
 

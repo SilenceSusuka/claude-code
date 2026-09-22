@@ -1,12 +1,12 @@
 ---
 title: "Auto Mode - AI 分类器驱动的自主执行模式"
-description: "详解 Claude Code 的 auto mode：基于 transcript classifier 的自动权限决策、两阶段分类流水线、危险权限剥离机制、模式切换状态管理、以及与 plan mode 的协作方式。"
+description: "详解 satou code 的 auto mode：基于 transcript classifier 的自动权限决策、两阶段分类流水线、危险权限剥离机制、模式切换状态管理、以及与 plan mode 的协作方式。"
 keywords: ["auto mode", "yoloClassifier", "transcript classifier", "权限分类", "自动执行", "两阶段分类"]
 ---
 
 ## 概述
 
-Auto mode 是 Claude Code 的一种权限模式，让 AI 进入**连续自主执行**状态。与传统模式（每个敏感操作都弹出权限对话框等待用户审批）不同，auto mode 使用 AI 分类器（transcript classifier）自动判断每个工具调用是否安全，从而实现无中断的执行体验。
+Auto mode 是 satou code 的一种权限模式，让 AI 进入**连续自主执行**状态。与传统模式（每个敏感操作都弹出权限对话框等待用户审批）不同，auto mode 使用 AI 分类器（transcript classifier）自动判断每个工具调用是否安全，从而实现无中断的执行体验。
 
 ```
 权限模式层级：
@@ -112,7 +112,7 @@ let autoModeCircuitBroken = false  // 由远程配置控制
 1. 检查 auto mode gate 是否开启（isAutoModeGateEnabled）
 2. 设置 autoModeActive = true
 3. 调用 stripDangerousPermissionsForAutoMode() 剥离危险规则
-4. 向对话注入 Auto Mode 系统提示
+4. 向对话传入 Auto Mode 系统提示
 ```
 
 ### 退出 Auto Mode
@@ -121,7 +121,7 @@ let autoModeCircuitBroken = false  // 由远程配置控制
 1. 设置 autoModeActive = false
 2. 设置 needsAutoModeExitAttachment = true（触发退出通知）
 3. 调用 restoreDangerousPermissions() 恢复被剥离的规则
-4. 向对话注入 "Exited Auto Mode" 提示
+4. 向对话传入 "Exited Auto Mode" 提示
 ```
 
 ### 触发路径
@@ -137,7 +137,7 @@ Auto mode 可通过以下方式激活：
 
 ### 进入时（Full Instructions）
 
-注入到对话中的指令（`messages.ts:3481`）：
+传入到对话中的指令（`messages.ts:3481`）：
 
 > Auto mode is active. The user chose continuous, autonomous execution. You should:
 >
@@ -150,7 +150,7 @@ Auto mode 可通过以下方式激活：
 
 ### 持续运行时（Sparse Instructions）
 
-后续轮次注入简短提醒：
+后续轮次传入简短提醒：
 
 > Auto mode still active. Execute autonomously, minimize interruptions, prefer action over planning.
 
@@ -258,6 +258,6 @@ Prompt 模板文件为**重建产物**——原始文件在反编译过程中丢
 | `src/utils/permissions/yolo-classifier-prompts/permissions_external.txt` | 外部权限模板 |
 | `src/utils/permissions/yolo-classifier-prompts/permissions_anthropic.txt` | 内部权限模板 |
 | `src/cli/handlers/autoMode.ts` | CLI `auto-mode` 子命令处理 |
-| `src/utils/messages.ts` | Auto mode 系统提示词注入 |
+| `src/utils/messages.ts` | Auto mode 系统提示词劫持 |
 | `src/types/permissions.ts` | 权限类型定义 |
 | `src/utils/betas.ts` | 模型 auto mode 支持检测 |

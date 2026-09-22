@@ -196,10 +196,10 @@
 
 ### 代码范围
 
-- 修改 [src/cli/handlers/templateJobs.ts](</e:/Source_code/Claude-code-bast/src/cli/handlers/templateJobs.ts:1>)
+- 修改 [src/cli/handlers/templateJobs.ts](</e:/Source_code/satou-code-bast/src/cli/handlers/templateJobs.ts:1>)
 - 新增 `src/jobs/state.ts`
 - 新增 `src/jobs/templates.ts`
-- Phase 2 再改 [src/jobs/classifier.ts](</e:/Source_code/Claude-code-bast/src/jobs/classifier.ts:1>)
+- Phase 2 再改 [src/jobs/classifier.ts](</e:/Source_code/satou-code-bast/src/jobs/classifier.ts:1>)
 
 ### 验证
 
@@ -223,16 +223,16 @@
 ### 现状
 
 - attach 主流程其实已经存在：
-  [src/main.tsx](</e:/Source_code/Claude-code-bast/src/main.tsx:4708>)
+  [src/main.tsx](</e:/Source_code/satou-code-bast/src/main.tsx:4708>)
 - 远端 viewer 所需基础模块已存在：
-  [src/remote/RemoteSessionManager.ts](</e:/Source_code/Claude-code-bast/src/remote/RemoteSessionManager.ts:1>)
-  [src/hooks/useAssistantHistory.ts](</e:/Source_code/Claude-code-bast/src/hooks/useAssistantHistory.ts:1>)
-  [src/assistant/sessionHistory.ts](</e:/Source_code/Claude-code-bast/src/assistant/sessionHistory.ts:1>)
+  [src/remote/RemoteSessionManager.ts](</e:/Source_code/satou-code-bast/src/remote/RemoteSessionManager.ts:1>)
+  [src/hooks/useAssistantHistory.ts](</e:/Source_code/satou-code-bast/src/hooks/useAssistantHistory.ts:1>)
+  [src/assistant/sessionHistory.ts](</e:/Source_code/satou-code-bast/src/assistant/sessionHistory.ts:1>)
 - 真正 stub 的主要是：
-  [src/assistant/sessionDiscovery.ts](</e:/Source_code/Claude-code-bast/src/assistant/sessionDiscovery.ts:1>)
-  [src/assistant/AssistantSessionChooser.ts](</e:/Source_code/Claude-code-bast/src/assistant/AssistantSessionChooser.ts:1>)
-  [src/commands/assistant/assistant.ts](</e:/Source_code/Claude-code-bast/src/commands/assistant/assistant.ts:7>)
-  [src/assistant/index.ts](</e:/Source_code/Claude-code-bast/src/assistant/index.ts:1>)
+  [src/assistant/sessionDiscovery.ts](</e:/Source_code/satou-code-bast/src/assistant/sessionDiscovery.ts:1>)
+  [src/assistant/AssistantSessionChooser.ts](</e:/Source_code/satou-code-bast/src/assistant/AssistantSessionChooser.ts:1>)
+  [src/commands/assistant/assistant.ts](</e:/Source_code/satou-code-bast/src/commands/assistant/assistant.ts:7>)
+  [src/assistant/index.ts](</e:/Source_code/satou-code-bast/src/assistant/index.ts:1>)
 
 ### 目标
 
@@ -272,14 +272,14 @@
 ### 代码范围
 
 - Phase 4A：
-  - [src/main.tsx](</e:/Source_code/Claude-code-bast/src/main.tsx:4708>)
-  - [src/commands/assistant/index.ts](</e:/Source_code/Claude-code-bast/src/commands/assistant/index.ts:1>)
+  - [src/main.tsx](</e:/Source_code/satou-code-bast/src/main.tsx:4708>)
+  - [src/commands/assistant/index.ts](</e:/Source_code/satou-code-bast/src/commands/assistant/index.ts:1>)
 - Phase 4B：
-  - [src/assistant/sessionDiscovery.ts](</e:/Source_code/Claude-code-bast/src/assistant/sessionDiscovery.ts:1>)
+  - [src/assistant/sessionDiscovery.ts](</e:/Source_code/satou-code-bast/src/assistant/sessionDiscovery.ts:1>)
 - Phase 4C：
-  - [src/assistant/AssistantSessionChooser.ts](</e:/Source_code/Claude-code-bast/src/assistant/AssistantSessionChooser.ts:1>)
+  - [src/assistant/AssistantSessionChooser.ts](</e:/Source_code/satou-code-bast/src/assistant/AssistantSessionChooser.ts:1>)
 - Phase 4D：
-  - [src/commands/assistant/assistant.ts](</e:/Source_code/Claude-code-bast/src/commands/assistant/assistant.ts:7>)
+  - [src/commands/assistant/assistant.ts](</e:/Source_code/satou-code-bast/src/commands/assistant/assistant.ts:7>)
 
 ### 验证
 

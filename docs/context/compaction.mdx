@@ -1,6 +1,6 @@
 ---
 title: "上下文压缩 - Compaction 三层策略与边界机制"
-description: "深度解析 Claude Code 上下文压缩的完整实现：Session Memory 压缩、传统 API 摘要压缩、MicroCompact 局部压缩三层策略，以及 CompactBoundary 消息、工具对保持、PTL 紧急降级等关键机制。"
+description: "深度解析 satou code 上下文压缩的完整实现：Session Memory 压缩、传统 API 摘要压缩、MicroCompact 局部压缩三层策略，以及 CompactBoundary 消息、工具对保持、PTL 紧急降级等关键机制。"
 keywords: ["上下文压缩", "Compaction", "token 管理", "对话压缩", "上下文窗口", "MicroCompact"]
 ---
 
@@ -133,14 +133,14 @@ API 要求每个 `tool_result` 都有对应的 `tool_use`，反之亦然。如�
 ```typescript
 // compact.ts:147-202
 const stripped = stripImagesFromMessages(messages)   // 图片→[image] 文字标记
-const stripped2 = stripReinjectedAttachments(stripped) // 移除会被重新注入的附件
+const stripped2 = stripReinjectedAttachments(stripped) // 移除会被重新传入的附件
 ```
 
 图片被替换为 `[image]` 标记，防止摘要 API 调用本身也触发 prompt-too-long 错误。
 
-### 压缩后的重新注入
+### 压缩后的重新传入
 
-压缩后，系统会从摘要中**重新注入关键上下文**：
+压缩后，系统会从摘要中**重新传入关键上下文**：
 
 ```typescript
 // compact.ts:126-134
@@ -151,10 +151,10 @@ export const POST_COMPACT_MAX_TOKENS_PER_SKILL = 5_000    // 每技能 5K token
 export const POST_COMPACT_SKILLS_TOKEN_BUDGET = 25_000    // 技能总预算 25K
 ```
 
-这 50K token 的重新注入预算用于：
+这 50K token 的重新传入预算用于：
 1. 恢复最近读取的文件内容（最多 5 个文件，每个截断到 5K token）
 2. 恢复已激活的技能指令（每个技能截断到 5K token，总计 25K）
-3. 重新注入 CLAUDE.md 内容
+3. 重新传入 CLAUDE.md 内容
 4. 恢复 MCP 工具发现结果
 
 ## CompactBoundary：压缩的边界标记
@@ -241,7 +241,7 @@ Reactive Compact 目前在反编译版本中是 stub（`isReactiveOnlyMode() →
 
 压缩前后可以执行自定义 Hook：
 
-- **Pre-compact Hook**（`executePreCompactHooks`）：在压缩前执行，可以注入"必须保留"的标记
+- **Pre-compact Hook**（`executePreCompactHooks`）：在压缩前执行，可以传入"必须保留"的标记
 - **Post-compact Hook**（`executePostCompactHooks`）：在压缩后执行，可以验证关键信息是否保留
 - **Session Start Hook**（`processSessionStartHooks('compact')`）：SM 压缩使用此 Hook 恢复 CLAUDE.md 等上下文
 

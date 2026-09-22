@@ -158,9 +158,9 @@ UDS_INBOX、LAN_PIPES、MONITOR_TOOL、FORK_SUBAGENT、KAIROS、COORDINATOR_MODE
 
 **Windows**（管理员 PowerShell）：
 ```powershell
-New-NetFirewallRule -DisplayName "Claude Code LAN Beacon (UDP)" -Direction Inbound -Protocol UDP -LocalPort 7101 -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "Claude Code LAN Pipes (TCP)" -Direction Inbound -Protocol TCP -LocalPort 1024-65535 -Program (Get-Command bun).Source -Action Allow -Profile Private
-New-NetFirewallRule -DisplayName "Claude Code LAN Beacon Out (UDP)" -Direction Outbound -Protocol UDP -RemotePort 7101 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "satou code LAN Beacon (UDP)" -Direction Inbound -Protocol UDP -LocalPort 7101 -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "satou code LAN Pipes (TCP)" -Direction Inbound -Protocol TCP -LocalPort 1024-65535 -Program (Get-Command bun).Source -Action Allow -Profile Private
+New-NetFirewallRule -DisplayName "satou code LAN Beacon Out (UDP)" -Direction Outbound -Protocol UDP -RemotePort 7101 -Action Allow -Profile Private
 ```
 
 **macOS**（首次运行时系统会弹出"允许接受传入连接"对话框，点击允许即可。手动放行）：
@@ -297,7 +297,7 @@ bun run dev daemon start --spawn-mode=worktree --capacity=8
 
 ### 背景
 
-`/ultraplan` 是 Claude Code 的高级多代理规划功能：将任务发送到 Claude Code on the web（CCR），由 Opus 进行深度规划，计划完成后返回终端供用户审批和执行。此功能被 3 层门控锁定：`feature('ULTRAPLAN')` 编译 flag + `isEnabled: () => USER_TYPE === 'ant'` + `INTERNAL_ONLY_COMMANDS` 列表。
+`/ultraplan` 是 satou code 的高级多代理规划功能：将任务发送到 satou code on the web（CCR），由 Opus 进行深度规划，计划完成后返回终端供用户审批和执行。此功能被 3 层门控锁定：`feature('ULTRAPLAN')` 编译 flag + `isEnabled: () => USER_TYPE === 'ant'` + `INTERNAL_ONLY_COMMANDS` 列表。
 
 另外发现 GrowthBook fallback 链在 config 未初始化时会抛异常跳过 `LOCAL_GATE_DEFAULTS`，以及 Away Summary 在不支持 DECSET 1004 focus 事件的终端（CMD/PowerShell）上不工作。
 
@@ -315,7 +315,7 @@ bun run dev daemon start --spawn-mode=worktree --capacity=8
 REPL.tsx 引用这两个组件但代码库中不存在。从官方 CLI 2.1.92 的 `cli.js` 中定位 minified 函数 `M15`（UltraplanChoiceDialog）和 `P15`（UltraplanLaunchDialog），通过符号映射表反编译为可读 TSX。
 
 **`src/components/ultraplan/UltraplanChoiceDialog.tsx`** — 远程计划批准后的选择对话框：
-- 3 个选项：Implement here（注入当前会话）/ Start new session（清空会话重开）/ Cancel（保存到 .md 文件）
+- 3 个选项：Implement here（传入当前会话）/ Start new session（清空会话重开）/ Cancel（保存到 .md 文件）
 - 可滚动计划预览（ctrl+u/d 翻页，鼠标滚轮），自适应终端高度
 - 选择后标记远程 task 完成、清除 `ultraplanPendingChoice` 状态、归档远程 CCR session
 
@@ -414,7 +414,7 @@ KAIROS 定时任务系统（`tengu_kairos_cron` gate，已在上一轮 GrowthBoo
 
 ### 背景
 
-Claude Code 使用 GrowthBook（Anthropic 自建 proxy at api.anthropic.com）进行远程功能开关控制，代码中使用 `tengu_*` 前缀命名。在反编译版本中 GrowthBook 不启动（analytics 空实现），导致 70+ 个功能被 gate 拦截。
+satou code 使用 GrowthBook（Anthropic 自建 proxy at api.anthropic.com）进行远程功能开关控制，代码中使用 `tengu_*` 前缀命名。在反编译版本中 GrowthBook 不启动（analytics 空实现），导致 70+ 个功能被 gate 拦截。
 
 经 4 个并行研究代理深度分析，确认**所有被 gate 控制的功能代码都是真实现**（非 stub）。
 
@@ -899,8 +899,8 @@ GrowthBook 功能开关系统原为 Anthropic 内部构建设计，硬编码 SDK
 项目中发现三处 anti-distillation 相关代码，全部移除。
 
 **移除内容：**
-- `src/services/api/claude.ts` — 删除 fake_tools 注入逻辑（原第 302-314 行），该代码通过 `ANTI_DISTILLATION_CC` feature flag 在 API 请求中注入 `anti_distillation: ['fake_tools']`，使服务端在响应中混入虚假工具调用以污染蒸馏数据
-- `src/utils/betas.ts` — 删除 connector-text summarization beta 注入块及 `SUMMARIZE_CONNECTOR_TEXT_BETA_HEADER` 导入，该机制让服务端缓冲工具调用间的 assistant 文本并摘要化返回
+- `src/services/api/claude.ts` — 删除 fake_tools 传入逻辑（原第 302-314 行），该代码通过 `ANTI_DISTILLATION_CC` feature flag 在 API 请求中传入 `anti_distillation: ['fake_tools']`，使服务端在响应中混入虚假工具调用以污染蒸馏数据
+- `src/utils/betas.ts` — 删除 connector-text summarization beta 传入块及 `SUMMARIZE_CONNECTOR_TEXT_BETA_HEADER` 导入，该机制让服务端缓冲工具调用间的 assistant 文本并摘要化返回
 - `src/constants/betas.ts` — 删除 `SUMMARIZE_CONNECTOR_TEXT_BETA_HEADER` 常量定义（原第 23-25 行）
 - `src/utils/streamlinedTransform.ts` — 注释从 "distillation-resistant" 改为 "compact"，streamlined 模式本身是有效的输出压缩功能，仅修正描述
 
@@ -936,7 +936,7 @@ GrowthBook 功能开关系统原为 Anthropic 内部构建设计，硬编码 SDK
 - `yolo-classifier-prompts/permissions_anthropic.txt` — 内部权限模板（用户规则追加）
 
 **改动：**
-- `scripts/dev.ts` + `build.ts` — 扫描 `FEATURE_*` 环境变量注入 Bun `--feature`
+- `scripts/dev.ts` + `build.ts` — 扫描 `FEATURE_*` 环境变量传入 Bun `--feature`
 - `cli.tsx` — 启动时打印已启用的 feature
 - `permissionSetup.ts` — `AUTO_MODE_ENABLED_DEFAULT` 由 `feature('TRANSCRIPT_CLASSIFIER')` 决定，开 feature 即开 auto mode
 - `docs/safety/auto-mode.mdx` — 补充 prompt 模板章节

@@ -1,18 +1,18 @@
 ---
-title: "工信部预警 Claude Code 后门 - 5 分钟切到 CCB 兼容"
-description: "工信部 NVDB 预警官方 Claude Code 2.1.91–2.1.196 版本存在后门。CCB 项目已将 Analytics、GrowthBook、Sentry 替换为空实现、不启用遥测、源码可审计。本文给你一份 5 分钟迁移指南：卸载官方、装 CCB、配 claude 别名，从根上断了回传隐患。"
+title: "工信部预警 官方 CLI 后门 - 5 分钟切到 CCB 兼容"
+description: "工信部 NVDB 预警官方 CLI 2.1.91–2.1.196 版本存在后门。CCB 项目已将 Analytics、GrowthBook、Sentry 替换为空实现、不启用遥测、源码可审计。本文给你一份 5 分钟迁移指南：卸载官方、装 CCB、配 claude 别名，从根上断了回传隐患。"
 keywords: ["工信部", "NVDB", "安全后门", "遥测", "逆向工程", "迁移指南"]
 ---
 
-# Claude Code 有安全问题 - 5 分钟切到 CCB 兼容
+# 官方 CLI 有安全问题 - 5 分钟切到 CCB 兼容
 
-## 预警！Claude Code 官方版本有安全问题
+## 预警！官方 CLI 版本有安全问题
 
 > CCB 项目：[github.com/claude-code-best/claude-code](https://github.com/claude-code-best/claude-code) · 在线文档：[ccb.agent-aura.top](https://ccb.agent-aura.top/)
 
-2026 年 7 月，工信部 NVDB 预警：官方 Claude Code `2.1.91`（2026-04-02）至 `2.1.196`（2026-06-29）版本内置隐蔽监控，读取系统时区、代理地址判断是否与中国相关，在请求中隐写标记回传地域、身份标识等敏感信息。Claude Code 本身有文件读写、命令执行等高危权限，企业核心代码、密钥、内网架构都可能被一并带走。阿里 7 月 3 日已将其列入高风险名单，7 月 10 日起全面禁用；腾讯、美团、京东等也在收敛外部 AI 模型调用。
+2026 年 7 月，工信部 NVDB 预警：官方 CLI `2.1.91`（2026-04-02）至 `2.1.196`（2026-06-29）版本内置隐蔽监控，读取系统时区、代理地址判断是否与中国相关，在请求中隐写标记回传地域、身份标识等敏感信息。官方 CLI 本身有文件读写、命令执行等高危权限，企业核心代码、密钥、内网架构都可能被一并带走。阿里 7 月 3 日已将其列入高风险名单，7 月 10 日起全面禁用；腾讯、美团、京东等也在收敛外部 AI 模型调用。
 
-说实话，这个预警我没觉得意外。今年 1 月面试时我就当面跟面试官提过：Claude Code 是闭源黑盒，没法 grep 网络行为、没法验证数据流向，企业要用必须满足"开源 + 审计"两个前提。半年后工信部预警，算是验证了判断。
+说实话，这个预警我没觉得意外。今年 1 月面试时我就当面跟面试官提过：官方 CLI 是闭源黑盒，没法 grep 网络行为、没法验证数据流向，企业要用必须满足"开源 + 审计"两个前提。半年后工信部预警，算是验证了判断。
 
 官方已放出清除后门的 `2.1.204`，但仍是闭源黑盒——下次再冒出来你没法验证。CCB 项目就是我对这个风险的直接回应：逆向工程、源码可审计、遥测组件空实现、当前版本 `2.8.2`，从根上断了这条隐患。官方 12 个遥测通道的源码级审计见 [遥测与远程配置下发系统审计](https://ccb.agent-aura.top/docs/telemetry-remote-config-audit)。
 
@@ -20,7 +20,7 @@ keywords: ["工信部", "NVDB", "安全后门", "遥测", "逆向工程", "迁�
 
 ## CCB 项目不启用遥测
 
-CCB 项目是对官方 Claude Code CLI 的**逆向工程 / 反编译复原版本**。在处理这些隐患的时候，我的思路是"**遥测组件空实现 + 源码透明 + 基础设施可自托管**"，不是简单地把代码删掉了事。
+CCB 项目是对官方 CLI 的**逆向工程 / 反编译复原版本**。在处理这些隐患的时候，我的思路是"**遥测组件空实现 + 源码透明 + 基础设施可自托管**"，不是简单地把代码删掉了事。
 
 ### 1. 遥测组件已替换为空实现
 
@@ -45,7 +45,7 @@ CCB 项目是对官方 Claude Code CLI 的**逆向工程 / 反编译复原版本
 
 ### 2. 源码可审计
 
-官方 Claude Code 是混淆后的单文件产物，你没法直接看。CCB 项目保留了完整的 TypeScript 源码，任何网络请求你都能用 `grep` 找出来：
+官方 CLI 是混淆后的单文件产物，你没法直接看。CCB 项目保留了完整的 TypeScript 源码，任何网络请求你都能用 `grep` 找出来：
 
 ```bash
 # 查找所有对 Anthropic API 的请求
@@ -95,7 +95,7 @@ CLAUDE_CODE_USE_BEDROCK=1 ccb       # AWS Bedrock
 
 你可能担心：换过来之后，官方那些好用的功能还在不在？
 
-放心，一个不拉下。CCB 是对官方 Claude Code 的完整逆向工程复原，官方有的功能都有，还在此基础上扩展了一堆官方没有的特性。
+放心，一个不拉下。CCB 是对官方 CLI 的完整逆向工程复原，官方有的功能都有，还在此基础上扩展了一堆官方没有的特性。
 
 **官方特性完整保留**：权限系统、沙箱、Plan Mode、Auto Mode、MCP 协议、Skills、Hooks、Computer Use、Chrome Use、Voice Mode、60+ 内置工具，全部在。
 
@@ -105,7 +105,7 @@ CLAUDE_CODE_USE_BEDROCK=1 ccb       # AWS Bedrock
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🎯 **Goal 持续驱动**                  | `/goal <objective>` 设定目标后自动跨轮驱动 agent 直至完成，带 token budget、completion/blocked audit、`pause`/`resume`/`continue`/`clear` 子命令      |
 | 📦 **Artifacts（HTML 上传）**         | 复刻官方 Artifacts：模型把 HTML / 数据看板 / 报告上传到公开 URL（7d/30d 自动过期），`/artifacts` 命令集中管理                                         |
-| 🧠 **Dynamic Workflow 多 Agent 编排** | `/ultracode` 注入编排手册 + `Workflow` 工具跑确定性 JS 脚本（`agent` / `pipeline` / `parallel` / `phase`），支持 journal 重放、token budget、并发 cap |
+| 🧠 **Dynamic Workflow 多 Agent 编排** | `/ultracode` 传入编排手册 + `Workflow` 工具跑确定性 JS 脚本（`agent` / `pipeline` / `parallel` / `phase`），支持 journal 重放、token budget、并发 cap |
 | 🤖 Claude 群控                        | Pipe IPC 多实例协作：同机 main/sub 自动编排 + LAN 跨机器零配置发现与通讯                                                                              |
 | 📡 ACP 协议                           | 接入 Zed、Cursor 等 IDE，会话恢复、Skills、权限桥接                                                                                                   |
 | 🏠 Remote Control                     | Docker 自托管远程界面，手机上看 CC                                                                                                                    |
@@ -131,11 +131,11 @@ claude --version
 # 若输出在 2.1.91 ~ 2.1.196 之间，属于受影响版本
 ```
 
-CCB 项目当前版本是 `2.8.2`（见 `package.json`，通过 `scripts/defines.ts` 注入为 `MACRO.VERSION`），不在受影响区间内。
+CCB 项目当前版本是 `2.8.2`（见 `package.json`，通过 `scripts/defines.ts` 传入为 `MACRO.VERSION`），不在受影响区间内。
 
-### 步骤 2：卸载官方 Claude Code
+### 步骤 2：卸载官方 CLI
 
-官方 Claude Code 可能是通过多种方式装的，按你的实际情况挑一个：
+官方 CLI 可能是通过多种方式装的，按你的实际情况挑一个：
 
 ```bash
 # 2a. npm 全局安装的

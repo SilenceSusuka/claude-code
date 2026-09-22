@@ -1,6 +1,6 @@
 ---
 title: "Hooks 生命周期钩子 - 执行引擎与拦截协议"
-description: "从源码角度解析 Claude Code Hooks 系统：27 种 Hook 事件、6 种 Hook 类型、同步/异步执行协议、JSON 输出 schema、if 条件匹配、以及 Hook 如何注入上下文和拦截工具调用。"
+description: "从源码角度解析 satou code Hooks 系统：27 种 Hook 事件、6 种 Hook 类型、同步/异步执行协议、JSON 输出 schema、if 条件匹配、以及 Hook 如何传入上下文和拦截工具调用。"
 keywords: ["Hooks", "生命周期钩子", "拦截器", "PreToolUse", "Hook 协议"]
 ---
 
@@ -8,7 +8,7 @@ keywords: ["Hooks", "生命周期钩子", "拦截器", "PreToolUse", "Hook 协�
 
 ## 27 种 Hook 事件
 
-Claude Code 定义了 27 种 Hook 事件（`HOOK_EVENTS` 数组，`src/entrypoints/sdk/coreTypes.ts`），覆盖完整的 Agent 生命周期：
+satou code 定义了 27 种 Hook 事件（`HOOK_EVENTS` 数组，`src/entrypoints/sdk/coreTypes.ts`），覆盖完整的 Agent 生命周期：
 
 | 阶段 | 事件 | 触发时机 | 匹配字段 |
 |------|------|---------|---------|
@@ -50,7 +50,7 @@ Hooks 配置支持 6 种执行方式，类型定义分布在 3 个文件中：
 | 类型 | 执行方式 | 适用场景 |
 |------|---------|---------|
 | `command` | Shell 命令（bash/PowerShell） | 通用脚本、CI 检查 |
-| `prompt` | 注入到 AI 上下文 | 代码规范提醒 |
+| `prompt` | 传入到 AI 上下文 | 代码规范提醒 |
 | `agent` | 启动子 Agent 执行 | 复杂分析任务 |
 | `http` | HTTP 请求 | 远程服务、Webhook |
 | `callback` | 内部 JS 函数 | 系统内置 Hook |
@@ -69,7 +69,7 @@ execCommandHook(hook, hookEvent, hookName, jsonInput, signal)
   │   ├── ${CLAUDE_PLUGIN_ROOT} → pluginRoot 路径
   │   ├── ${CLAUDE_PLUGIN_DATA} → plugin 数据目录
   │   └── ${user_config.X} → 用户配置值
-  ├── 环境变量注入
+  ├── 环境变量传入
   │   ├── CLAUDE_PROJECT_DIR
   │   ├── CLAUDE_ENV_FILE（SessionStart/Setup/CwdChanged/FileChanged）
   │   └── CLAUDE_PLUGIN_OPTION_*（plugin options）
@@ -97,7 +97,7 @@ if (isAsyncHookJSONOutput(parsed)) {
 
 ### asyncRewake：Hook 唤醒模型
 
-`asyncRewake` 模式的 Hook 绕过 `AsyncHookRegistry`。当 Hook 退出码为 2 时，通过 `enqueuePendingNotification()` 以 `task-notification` 模式注入消息，唤醒空闲的模型（通过 `useQueueProcessor`）或在忙碌时注入 `queued_command` 附件。
+`asyncRewake` 模式的 Hook 绕过 `AsyncHookRegistry`。当 Hook 退出码为 2 时，通过 `enqueuePendingNotification()` 以 `task-notification` 模式传入消息，唤醒空闲的模型（通过 `useQueueProcessor`）或在忙碌时传入 `queued_command` 附件。
 
 ## Hook 输出的 JSON Schema
 
@@ -110,13 +110,13 @@ if (isAsyncHookJSONOutput(parsed)) {
   "stopReason": "安全检查失败",           // continue=false 时的原因
   "decision": "approve" | "block",      // 全局决策
   "reason": "原因说明",                   // 决策原因
-  "systemMessage": "警告内容",           // 注入到上下文的系统消息
+  "systemMessage": "警告内容",           // 传入到上下文的系统消息
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "allow" | "deny" | "ask",
     "permissionDecisionReason": "匹配了安全规则",
     "updatedInput": { ... },            // 修改后的工具输入
-    "additionalContext": "额外上下文"     // 注入到对话
+    "additionalContext": "额外上下文"     // 传入到对话
   }
 }
 ```
@@ -127,16 +127,16 @@ if (isAsyncHookJSONOutput(parsed)) {
 |------|---------|------|
 | `PreToolUse` | `permissionDecision`, `permissionDecisionReason`, `updatedInput`, `additionalContext` | 拦截/修改工具输入 |
 | `PostToolUse` | `additionalContext`, `updatedMCPToolOutput` | 修改 MCP 工具输出 |
-| `PostToolUseFailure` | `additionalContext` | 失败后注入上下文 |
-| `UserPromptSubmit` | `additionalContext` | 注入额外上下文 |
+| `PostToolUseFailure` | `additionalContext` | 失败后传入上下文 |
+| `UserPromptSubmit` | `additionalContext` | 传入额外上下文 |
 | `SessionStart` | `additionalContext`, `initialUserMessage`, `watchPaths` | 设置初始消息和文件监控 |
 | `PermissionRequest` | `decision`（含 `allow`/`deny` 子字段） | 权限请求的 Hook 决策 |
 | `PermissionDenied` | `retry` | 指示是否重试 |
-| `SubagentStart` | `additionalContext` | 子 Agent 启动时注入上下文 |
+| `SubagentStart` | `additionalContext` | 子 Agent 启动时传入上下文 |
 | `Elicitation` | `action`, `content` | 控制用户输入对话框 |
 | `ElicitationResult` | `action`, `content` | Elicitation 结果处理 |
-| `Notification` | `additionalContext` | 通知事件注入上下文 |
-| `Setup` | `additionalContext` | 初始化时注入上下文 |
+| `Notification` | `additionalContext` | 通知事件传入上下文 |
+| `Setup` | `additionalContext` | 初始化时传入上下文 |
 | `CwdChanged` | `watchPaths` | 目录变更后更新监控路径 |
 | `FileChanged` | `watchPaths` | 文件变更后更新监控路径 |
 | `WorktreeCreate` | `worktreePath` | Worktree 创建通知 |
@@ -225,10 +225,10 @@ SDK 非交互模式下信任是隐式的（`getIsNonInteractiveSession()` 为 tr
 
 `updatedInput` 替换原始工具输入；`updatedMCPToolOutput`（PostToolUse 事件）替换 MCP 工具的返回值——可用于过滤敏感数据。
 
-### 3. 注入上下文（additionalContext / systemMessage）
+### 3. 传入上下文（additionalContext / systemMessage）
 
-- `additionalContext` → 通过 `createAttachmentMessage({ type: 'hook_additional_context' })` 注入为用户消息
-- `systemMessage` → 注入为系统警告，直接显示给用户
+- `additionalContext` → 通过 `createAttachmentMessage({ type: 'hook_additional_context' })` 传入为用户消息
+- `systemMessage` → 传入为系统警告，直接显示给用户
 
 ### 4. 控制流程（continue / stopReason）
 

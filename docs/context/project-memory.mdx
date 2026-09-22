@@ -1,16 +1,16 @@
 ---
 title: "项目记忆系统 - 文件级跨对话记忆架构"
-description: "深度解析 Claude Code 记忆系统：基于文件的持久化存储、MEMORY.md 索引结构、四类型分类法、Sonnet 智能召回、Session Memory 压缩集成。"
+description: "深度解析 satou code 记忆系统：基于文件的持久化存储、MEMORY.md 索引结构、四类型分类法、Sonnet 智能召回、Session Memory 压缩集成。"
 keywords: ["项目记忆", "MEMORY.md", "AI 记忆", "跨对话", "自动记忆", "memdir"]
 ---
 
-{/* 本章目标：从源码层面剖析记忆系统的存储架构、召回机制和注入链路 */}
+{/* 本章目标：从源码层面剖析记忆系统的存储架构、召回机制和传入链路 */}
 
 ## 记忆系统的存储架构
 
 源码路径：`src/memdir/paths.ts`、`src/memdir/memdir.ts`
 
-Claude Code 的记忆系统是**纯文件**的——没有数据库、没有向量存储，只有 Markdown 文件和目录结构。
+satou code 的记忆系统是**纯文件**的——没有数据库、没有向量存储，只有 Markdown 文件和目录结构。
 
 ### 目录布局
 
@@ -139,11 +139,11 @@ System Prompt 明确指示："如果已提供最近使用的工具列表，不�
 
 `alreadySurfaced` 参数过滤之前轮次已展示过的文件路径，让 Sonnet 的 5 槽预算花在新的候选上，而不是重复召回同一文件。
 
-## 记忆注入 System Prompt 的链路
+## 记忆传入 System Prompt 的链路
 
 源码路径：`src/memdir/memdir.ts` → `src/context.ts`
 
-`loadMemoryPrompt()` 是记忆注入的入口，每会话调用一次（通过 `systemPromptSection('memory', ...)` 缓存）：
+`loadMemoryPrompt()` 是记忆传入的入口，每会话调用一次（通过 `systemPromptSection('memory', ...)` 缓存）：
 
 ```typescript
 // memdir.ts:419-507
@@ -162,7 +162,7 @@ export async function loadMemoryPrompt(): Promise<string | null> {
 }
 ```
 
-注入时机：`context.ts` 中 `getSystemContext()` 调用时，记忆 Prompt 作为 system prompt 的一个 section 被组装。`MEMORY.md` 的内容作为 **user context message** 注入（而非 system prompt），这样可以利用 Prompt Cache 的 prefix 共享。
+传入时机：`context.ts` 中 `getSystemContext()` 调用时，记忆 Prompt 作为 system prompt 的一个 section 被组装。`MEMORY.md` 的内容作为 **user context message** 传入（而非 system prompt），这样可以利用 Prompt Cache 的 prefix 共享。
 
 ## KAIROS 模式：每日日志
 

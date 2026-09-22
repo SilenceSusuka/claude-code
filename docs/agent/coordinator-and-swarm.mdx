@@ -1,10 +1,10 @@
 ---
 title: "协调者与蜂群模式：多 Agent 编排机制"
-description: "从源码角度拆解 Claude Code 的 Coordinator Mode、Agent Teams / Swarm、subagent、teammate、Mailbox、Task 工具、runtime task、状态恢复与排障路径。"
+description: "从源码角度拆解 satou code 的 Coordinator Mode、Agent Teams / Swarm、subagent、teammate、Mailbox、Task 工具、runtime task、状态恢复与排障路径。"
 keywords: ["协调者模式", "蜂群模式", "Agent Swarm", "Agent Teams", "多 Agent 协作", "任务编排", "Mailbox", "Subagent"]
 ---
 
-Claude Code 里有很多看起来都叫“多 Agent”的东西：`Agent` 工具、fork agent、Coordinator Mode、Agent Teams / Swarm、remote agent、后台 runtime task、`TaskCreate` 任务白板。它们共享部分底层设施，但不是同一个抽象。
+satou code 里有很多看起来都叫“多 Agent”的东西：`Agent` 工具、fork agent、Coordinator Mode、Agent Teams / Swarm、remote agent、后台 runtime task、`TaskCreate` 任务白板。它们共享部分底层设施，但不是同一个抽象。
 
 这篇文档解决的是跨机制理解问题：当你看到一个任务被“派出去”、一个 teammate 变成 idle、一个 `<task-notification>` 回到主线程、一个 team 目录还在但 teammate 不跑了，应该知道它属于哪套机制、状态放在哪里、通信走哪条路、哪些东西能恢复。
 
@@ -172,7 +172,7 @@ Coordinator prompt 不是只看 env。交互 REPL 侧大致优先级是：
 
 风险点是 `--agent` 和 Coordinator 混用：可能出现工具池已经按 coordinator 过滤，但 system prompt 不是 coordinator 的不一致。
 
-Headless 也要单独看。当前 headless 路径明确做了 coordinator 工具过滤，并注入 coordinator user context；但 system prompt 组装路径和交互 REPL 不完全相同，应把它当成需要复核的边界，而不是默认等同交互路径。
+Headless 也要单独看。当前 headless 路径明确做了 coordinator 工具过滤，并传入 coordinator user context；但 system prompt 组装路径和交互 REPL 不完全相同，应把它当成需要复核的边界，而不是默认等同交互路径。
 
 ### 4. 工具过滤状态机
 
@@ -183,7 +183,7 @@ Coordinator 主线程和 worker 的工具池不同：
 | Coordinator 主线程 | `Agent`、`SendMessage`、`TaskStop`、`SyntheticOutput`、PR activity 订阅类 MCP 工具 | 只编排，不直接执行。 |
 | worker | `ASYNC_AGENT_ALLOWED_TOOLS`，排除 `TeamCreate`、`TeamDelete`、`SendMessage`、`SyntheticOutput` | 执行任务，但不能继续嵌套编排。 |
 | simple mode worker | `Bash`、`Read`、`Edit` | 降低工具面，适合简单执行路径。 |
-| MCP 工具 | 按已连接 server 注入 worker context | 让 worker 能使用外部能力，但由工具池控制边界。 |
+| MCP 工具 | 按已连接 server 传入 worker context | 让 worker 能使用外部能力，但由工具池控制边界。 |
 | scratchpad | gate 开启时提供 scratchpad 目录 | 允许跨 worker 共享临时知识。 |
 
 交互路径主要走 `mergeAndFilterTools()`；headless 路径会在主入口直接应用 coordinator 工具过滤；worker 工具池由 `AgentTool` 独立组装，不继承主线程被过滤后的工具池。
@@ -379,7 +379,7 @@ flowchart TD
 | teammate | 有 `name`，且存在 `team_name` 或当前 `teamContext` | `spawnTeammate()`，返回 `teammate_spawned`。 |
 | remote | `isolation: "remote"` | 注册 `RemoteAgentTask`，本地保存 remote sidecar。 |
 | fork | 省略 `subagent_type` 且 fork gate/上下文允许 | 强制后台 local agent，继承父上下文和 exact tools。 |
-| async local | 显式 async、Coordinator worker、或自动后台条件满足 | 返回 `async_launched`，完成后注入 `<task-notification>`。 |
+| async local | 显式 async、Coordinator worker、或自动后台条件满足 | 返回 `async_launched`，完成后传入 `<task-notification>`。 |
 | sync local | 默认前台一次性 subagent | 当前 tool call 返回 `tool_result`。 |
 
 所以文档里不能把“Agent”写成一个单一概念：同一个工具入口下面至少有五条运行路径。

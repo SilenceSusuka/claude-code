@@ -2,17 +2,17 @@
 
 ## 需求背景
 
-当前 Claude Code 有 60+ 内置工具和无限 MCP 工具，Agent 在处理任务时缺乏"根据任务描述自动发现最匹配工具"的能力。现有 `ToolSearchTool` 仅处理延迟加载（按需加载 schema via `tool_reference`），不做语义发现。`tool_reference` 机制存在以下局限：
+当前 satou code 有 60+ 内置工具和无限 MCP 工具，Agent 在处理任务时缺乏"根据任务描述自动发现最匹配工具"的能力。现有 `ToolSearchTool` 仅处理延迟加载（按需加载 schema via `tool_reference`），不做语义发现。`tool_reference` 机制存在以下局限：
 
 1. **仅 Anthropic 一方 API 支持** — OpenAI/Gemini/Grok 兼容层不支持 `tool_reference` beta 特性
-2. **破坏 prompt cache** — 动态注入工具 schema 导致缓存失效
+2. **破坏 prompt cache** — 动态传入工具 schema 导致缓存失效
 3. **工具列表固定** — 每次请求的工具集在请求开始时就确定了，临时添加工具触发缓存全部失效
 
 用户也无法直观了解哪些工具适合当前任务，缺乏推荐机制。
 
 ## 目标
 
-1. 激进精简初始化工具注入，从 60+ 精简到 ~10 个核心工具 + 2 个入口工具（ToolSearch + ExecuteTool）
+1. 激进精简初始化工具传入，从 60+ 精简到 ~10 个核心工具 + 2 个入口工具（ToolSearch + ExecuteTool）
 2. 增强 `ToolSearchTool`，增加 TF-IDF 文本匹配的"工具发现"能力
 3. 新建 `ExecuteTool`，提供跨 API provider 的统一工具执行入口
 4. 支持用户输入提示词后自动预取推荐工具（类似 skill prefetch）
@@ -28,7 +28,7 @@
 
 ```text
 初始化阶段（激进精简）:
-  核心工具（~10个，始终加载 schema）     延迟工具（其余全部，仅注入名称列表）
+  核心工具（~10个，始终加载 schema）     延迟工具（其余全部，仅传入名称列表）
   Bash / Read / Edit / Write / Glob      WebFetch / WebSearch / NotebookEdit
   Grep / Agent / AskUser / ToolSearch    TodoWrite / CronTools / TeamCreate
   ExecuteTool                            SkillTool / PlanMode / ...（50+ 工具）
@@ -44,7 +44,7 @@
 
 ### 1. 初始化精简（激进策略）
 
-**核心思路**: 将初始化时注入的工具从 60+ 精简到 ~10 个核心工具 + 2 个入口工具（ToolSearch + ExecuteTool）。其余 50+ 工具全部延迟加载，仅注入名称列表到延迟工具清单。
+**核心思路**: 将初始化时传入的工具从 60+ 精简到 ~10 个核心工具 + 2 个入口工具（ToolSearch + ExecuteTool）。其余 50+ 工具全部延迟加载，仅传入名称列表到延迟工具清单。
 
 **始终加载的核心工具**（31 个）:
 
@@ -183,9 +183,9 @@ export function isDeferredTool(tool: Tool): boolean {
 
 核心工具直接注册（带完整 schema），延迟工具也注册到工具池（用于 ExecuteTool 查找），但标记为 deferred。
 
-4. **延迟工具名称列表注入**（`src/services/api/claude.ts`）：
+4. **延迟工具名称列表传入**（`src/services/api/claude.ts`）：
 
-构建 API 请求时，核心工具的 schema 正常注入。延迟工具仅注入名称列表到 `<available-deferred-tools>` 或 `system-reminder` 附件中，模型通过 ToolSearchTool 获取详情。
+构建 API 请求时，核心工具的 schema 正常传入。延迟工具仅传入名称列表到 `<available-deferred-tools>` 或 `system-reminder` 附件中，模型通过 ToolSearchTool 获取详情。
 
 **收益**:
 - 初始 prompt 体积减少约 30-40%（26 个内置工具 schema → 名称列表，加上 MCP 工具全延迟）
@@ -349,7 +349,7 @@ const ExecuteTool = buildTool({
         │
         └── collectToolSearchPrefetch()
             │
-            ├── 有结果 → 注入 system-reminder 或 <available-tools-hint>
+            ├── 有结果 → 传入 system-reminder 或 <available-tools-hint>
             └── 无结果 → 不做任何附加
 ```
 
@@ -433,13 +433,13 @@ const ExecuteTool = buildTool({
 | `src/tools.ts` | 注册 ExecuteTool、调整 `getAllBaseTools()` 工具注册 |
 | `src/utils/toolSearch.ts` | 适配新的延迟判定逻辑 |
 | `src/constants/prompts.ts` | 添加 ToolSearch 引导指令到系统提示词 |
-| `src/services/api/claude.ts` | 集成预取管道、调整延迟工具注入方式 |
+| `src/services/api/claude.ts` | 集成预取管道、调整延迟工具传入方式 |
 | `src/screens/REPL.tsx` | 集成 ToolSearchHint 组件 |
 
 ## 验收标准
 
 - [ ] 初始化时仅加载 ~10 个核心工具 schema，其余工具延迟加载
-- [ ] 延迟工具名称列表正确注入到 API 请求中
+- [ ] 延迟工具名称列表正确传入到 API 请求中
 - [ ] ToolSearchTool 支持基于 TF-IDF 的工具发现搜索（`discover:` 模式）
 - [ ] ToolSearchTool 支持关键词 + TF-IDF 混合搜索
 - [ ] ExecuteTool 可通过 tool_name + params 执行任意已注册工具

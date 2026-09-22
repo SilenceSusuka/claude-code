@@ -56,7 +56,7 @@ export const PermissionsSchema = lazySchema(() =>
       defaultMode: z
         .enum(PERMISSION_MODES)
         .optional()
-        .describe('Default permission mode when Claude Code needs access'),
+        .describe('Default permission mode when satou code needs access'),
       disableBypassPermissionsMode: z
         .enum(['disable'])
         .optional()
@@ -251,7 +251,7 @@ export const SettingsSchema = lazySchema(() =>
       $schema: z
         .literal(CLAUDE_CODE_SETTINGS_SCHEMA_URL)
         .optional()
-        .describe('JSON Schema reference for Claude Code settings'),
+        .describe('JSON Schema reference for satou code settings'),
       apiKeyHelper: z
         .string()
         .optional()
@@ -284,7 +284,7 @@ export const SettingsSchema = lazySchema(() =>
                   .describe('IdP issuer URL for OIDC discovery'),
                 clientId: z
                   .string()
-                  .describe("Claude Code's client_id registered at the IdP"),
+                  .describe("satou code's client_id registered at the IdP"),
                 callbackPort: z
                   .number()
                   .int()
@@ -325,7 +325,7 @@ export const SettingsSchema = lazySchema(() =>
         ),
       env: EnvironmentVariablesSchema()
         .optional()
-        .describe('Environment variables to set for Claude Code sessions'),
+        .describe('Environment variables to set for satou code sessions'),
       // Attribution for commits and PRs
       attribution: z
         .object({
@@ -347,7 +347,7 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe(
           'Customize attribution text for commits and PRs. ' +
-            'Each field defaults to the standard Claude Code attribution if not set.',
+            'Each field defaults to the standard satou code attribution if not set.',
         ),
       includeCoAuthoredBy: z
         .boolean()
@@ -375,7 +375,7 @@ export const SettingsSchema = lazySchema(() =>
       model: z
         .string()
         .optional()
-        .describe('Override the default model used by Claude Code'),
+        .describe('Override the default model used by satou code'),
       // Enterprise allowlist of models
       availableModels: z
         .array(z.string())
@@ -795,11 +795,11 @@ export const SettingsSchema = lazySchema(() =>
         .describe(
           'When true, poor mode is active — extract_memories and prompt_suggestion are disabled to save tokens.',
         ),
-      instructionFollowProfile: z
+      coreRulesProfile: z
         .string()
         .optional()
         .describe(
-          'Active instruction-follow profile name (markdown file under follow-prompts/). ' +
+          'Active Core Rules profile name (markdown file under follow-prompts/). ' +
             'Injected on every model call as a system section plus a trailing recency reminder.',
         ),
       showClearContextOnPlanAccept: z

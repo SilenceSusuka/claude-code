@@ -1,6 +1,6 @@
 ---
 title: "Agentic Loop：AI 自主循环的核心机制"
-description: "深入解析 Claude Code 的 query() 异步生成器循环——从流式 API 调用、工具并行执行、上下文压缩、错误恢复到终止条件的完整状态机，基于 src/query.ts 的源码级分析。"
+description: "深入解析 satou code 的 query() 异步生成器循环——从流式 API 调用、工具并行执行、上下文压缩、错误恢复到终止条件的完整状态机，基于 src/query.ts 的源码级分析。"
 keywords: ["Agentic Loop", "query loop", "tool_use", "状态机", "auto-compact", "streaming", "recovery"]
 sourceRef: "3ec5675 (2026-04-08)"
 ---
@@ -10,7 +10,7 @@ sourceRef: "3ec5675 (2026-04-08)"
 ## 什么是 Agentic Loop
 
 传统聊天机器人：你问一句，它答一句。  
-Claude Code 不一样：你说一个需求，它可能连续执行十几步操作才给你最终结果。
+satou code 不一样：你说一个需求，它可能连续执行十几步操作才给你最终结果。
 
 这背后的机制叫做 **Agentic Loop**（智能体循环），核心实现在 `src/query.ts` 的 `queryLoop()` 异步生成器函数。它是一个 `while(true)` 无限循环，每次迭代代表一次"思考→行动→观察"周期。
 
@@ -95,8 +95,8 @@ const toolUpdates = streamingToolExecutor
 
 ### 2. max_output_tokens 恢复（`max_output_tokens_escalate` / `max_output_tokens_recovery`）
 当 AI 输出被截断时（`apiError === 'max_output_tokens'`），分两阶段恢复：
-- **提升阶段**（`max_output_tokens_escalate`）：首次截断时，将 `maxOutputTokens` 从默认值提升到 `ESCALATED_MAX_TOKENS`（64K）。静默重试，不注入 meta 消息。
-- **恢复阶段**（`max_output_tokens_recovery`）：提升后仍然截断时，注入恢复消息"Output token limit hit. Resume directly..."，最多重试 `MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3` 次。恢复耗尽后，暂扣的错误消息被释放。
+- **提升阶段**（`max_output_tokens_escalate`）：首次截断时，将 `maxOutputTokens` 从默认值提升到 `ESCALATED_MAX_TOKENS`（64K）。静默重试，不传入 meta 消息。
+- **恢复阶段**（`max_output_tokens_recovery`）：提升后仍然截断时，传入恢复消息"Output token limit hit. Resume directly..."，最多重试 `MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3` 次。恢复耗尽后，暂扣的错误消息被释放。
 
 ### 3. Prompt-Too-Long 恢复（`collapse_drain_retry` / `reactive_compact_retry`）
 当遇到 413 错误时，按优先级尝试两种压缩策略：
@@ -104,10 +104,10 @@ const toolUpdates = streamingToolExecutor
 - **Reactive Compact**（`reactive_compact_retry`）：如果 collapse drain 无法恢复，触发即时压缩（reactive compact），生成摘要后重试。`hasAttemptedReactiveCompact` 标志防止无限循环。
 
 ### 4. Stop Hook 阻塞重试（`stop_hook_blocking`）
-Stop hook 可以注入阻塞错误消息，强制 AI 重新思考。新的消息（包含阻塞错误）被追加到对话中，`stopHookActive = true`，进入下一轮迭代。
+Stop hook 可以传入阻塞错误消息，强制 AI 重新思考。新的消息（包含阻塞错误）被追加到对话中，`stopHookActive = true`，进入下一轮迭代。
 
 ### 5. Token Budget 继续提示（`token_budget_continuation`）
-当 `TOKEN_BUDGET` feature 启用时，如果 token 消耗达到阈值但未超出预算，注入 nudge 消息让 AI 加速收尾，然后继续。
+当 `TOKEN_BUDGET` feature 启用时，如果 token 消耗达到阈值但未超出预算，传入 nudge 消息让 AI 加速收尾，然后继续。
 
 ## 模型降级（Fallback）
 
@@ -145,19 +145,19 @@ type State = {
 
 当 `TOKEN_BUDGET` feature 启用时（`src/query.ts` 中 `!needsFollowUp` 分支内的预算检查逻辑），循环在终止前会检查 token 消耗：
 
-- **continuation**：未达到预算但超过阈值 → 注入 nudge 消息，让 AI 加速收尾
+- **continuation**：未达到预算但超过阈值 → 传入 nudge 消息，让 AI 加速收尾
 - **diminishing_returns**：检测到收益递减 → 提前终止
 - 预算数据来自 `createBudgetTracker()`，跨迭代累计
 
 ## 为什么不是"一次规划，批量执行"
 
 <Note>
-源码揭示了为什么 Claude Code 选择逐步循环：
+源码揭示了为什么 satou code 选择逐步循环：
 </Note>
 
 - **每一步都产生真实信息**：`runTools()` 返回的 `toolResults` 是 API 不可能预知的——命令输出、文件内容、错误信息
 - **动态上下文管理**：每轮迭代前都重新评估压缩需求（autocompact → microcompact → snip），基于最新的 token 计数
-- **错误即时恢复**：工具失败不需要推倒重来——stop hook 可以注入阻塞错误让 AI 修正策略
+- **错误即时恢复**：工具失败不需要推倒重来——stop hook 可以传入阻塞错误让 AI 修正策略
 - **用户可控**：`abortController.signal` 在循环的多个检查点被检测（第 1059、1095、1529 行），用户按 ESC 可以优雅中断
 - **成本控制**：Token Budget 在每轮终止前检查，防止 AI 无效循环
 

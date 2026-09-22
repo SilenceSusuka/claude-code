@@ -1,6 +1,6 @@
 ---
 title: "Token 预算管理 - 上下文窗口动态计算"
-description: "从源码角度揭示 Claude Code token 预算管理：200K 上下文窗口的动态计算、截断机制、缓存优化和自动压缩的完整链路。"
+description: "从源码角度揭示 satou code token 预算管理：200K 上下文窗口的动态计算、截断机制、缓存优化和自动压缩的完整链路。"
 keywords: ["Token 预算", "上下文窗口", "token 计算", "截断机制", "缓存优化"]
 ---
 
@@ -8,7 +8,7 @@ keywords: ["Token 预算", "上下文窗口", "token 计算", "截断机制", "�
 
 ## 上下文窗口：200K 不是全部
 
-Claude Code 的默认上下文窗口为 200K tokens（`MODEL_CONTEXT_WINDOW_DEFAULT = 200_000`），但实际可用于对话的空间远小于此：
+satou code 的默认上下文窗口为 200K tokens（`MODEL_CONTEXT_WINDOW_DEFAULT = 200_000`），但实际可用于对话的空间远小于此：
 
 ```
 上下文窗口（200K）
@@ -139,13 +139,13 @@ FileRead, Bash, Grep, Glob, WebSearch, WebFetch, FileEdit, FileWrite
 ```
 autoCompactIfNeeded() / compactConversation()
   ↓
-1. 执行 PreCompact hooks（外部可注入自定义指令）
+1. 执行 PreCompact hooks（外部可传入自定义指令）
   ↓
 2. 尝试 Session Memory 压缩（更轻量，优先尝试）
   ↓
 3. Session Memory 失败 → 全量压缩
    a. 图片/文档从消息中剥离（替换为 [image]/[document]）
-   b. skill_discovery/skill_listing 附件剥离（压缩后会重新注入）
+   b. skill_discovery/skill_listing 附件剥离（压缩后会重新传入）
    c. 通过 forked agent 发送摘要请求（复用主线程的 prompt cache）
    d. 如果摘要请求本身触发 prompt-too-long → truncateHeadForPTLRetry()
       从最老的 API 轮次开始删除，重试最多 3 次
@@ -157,7 +157,7 @@ autoCompactIfNeeded() / compactConversation()
    - plan 文件附件（如果有）
    - plan mode 指令（如果在计划模式中）
    - 已调用的 skill 内容（每 skill ≤5K，总计 ≤25K）
-   - deferred tools / agent listing / MCP 指令的增量重新注入
+   - deferred tools / agent listing / MCP 指令的增量重新传入
    - SessionStart hooks 重新执行
    - PostCompact hooks 执行
   ↓

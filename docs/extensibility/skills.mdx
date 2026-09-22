@@ -1,6 +1,6 @@
 ---
 title: "Skills 技能系统 - Prompt 即能力的架构哲学"
-description: "深入剖析 Claude Code Skills 系统的完整实现：从磁盘加载、Frontmatter 解析、预算感知描述截断、双模式执行（inline/fork）、权限白名单、条件激活、动态发现到远程技能加载，揭示一条完整的 Skill 生命周期链路。"
+description: "深入剖析 satou code Skills 系统的完整实现：从磁盘加载、Frontmatter 解析、预算感知描述截断、双模式执行（inline/fork）、权限白名单、条件激活、动态发现到远程技能加载，揭示一条完整的 Skill 生命周期链路。"
 keywords: ["Skills", "SkillTool", "技能加载", "Frontmatter", "whenToUse", "allowedTools", "fork执行", "动态发现"]
 ---
 
@@ -102,15 +102,15 @@ SkillTool（`packages/builtin-tools/src/tools/SkillTool/SkillTool.ts:332`）在 
 
 ### Inline 模式（默认）
 
-Skill 的 Prompt 内容被注入为 **UserMessage**，在主对话流中继续执行：
+Skill 的 Prompt 内容被传入为 **UserMessage**，在主对话流中继续执行：
 
 1. `processPromptSlashCommand()` 处理参数替换（`$ARGUMENTS`）和 shell 命令展开（`` !`...` ``）
 2. `${CLAUDE_SKILL_DIR}` 被替换为 Skill 所在目录的绝对路径
 3. `${CLAUDE_SESSION_ID}` 被替换为当前会话 ID
-4. 返回 `newMessages`（注入到对话流）+ `contextModifier`（修改权限上下文）
+4. 返回 `newMessages`（传入到对话流）+ `contextModifier`（修改权限上下文）
 
 `contextModifier`（第 776 行）做了三件事：
-- **工具白名单注入**：将 `allowedTools` 合并到 `alwaysAllowRules.command`
+- **工具白名单传入**：将 `allowedTools` 合并到 `alwaysAllowRules.command`
 - **模型切换**：`resolveSkillModelOverride()` 处理模型覆盖，保留 `[1m]` 后缀以避免 200K 窗口截断
 - **努力级别覆盖**：修改 `effortValue`
 
@@ -146,7 +146,7 @@ Fork 模式适用于需要强隔离的场景（如长时间运行的审查任务
 
 ## Prompt 预算：1% 上下文窗口的截断策略
 
-Skill 列表注入 System Prompt 时有严格的字符预算（`prompt.ts`）：
+Skill 列表传入 System Prompt 时有严格的字符预算（`prompt.ts`）：
 
 - **预算计算**：`contextWindowTokens × 4 chars/token × 1%`（约 8000 字符）
 - **单条上限**：`MAX_LISTING_DESC_CHARS = 250` 字符（超出截断为 `…`）
@@ -196,7 +196,7 @@ score = usageCount × max(0.5^(daysSinceUse / 7), 0.1)
 1. `validateInput()` 中 `stripCanonicalPrefix()` 拦截 canonical 名称
 2. `executeRemoteSkill()`（第 970 行）从远程 URL 加载 SKILL.md
 3. 支持 `gs://`、`https://`、`s3://` 等 URL 协议
-4. 内容经过 frontmatter 剥离、`${CLAUDE_SKILL_DIR}` 替换后直接注入
+4. 内容经过 frontmatter 剥离、`${CLAUDE_SKILL_DIR}` 替换后直接传入
 5. 通过 `addInvokedSkill()` 注册到 compaction 保留状态，确保压缩后仍可恢复
 6. 远程 Skill 不经过 `processPromptSlashCommand`——无 `!command` 替换、无 `$ARGUMENTS` 展开
 
@@ -211,11 +211,11 @@ score = usageCount × max(0.5^(daysSinceUse / 7), 0.1)
   ↓ 条件 Skill → conditionalSkills Map（等待路径匹配激活）
   ↓ getSkillDirCommands() memoize 缓存
   ↓ getAllCommands() 合并 local + MCP
-  ↓ formatCommandsWithinBudget() → 截断后的 Skill 列表注入 System Prompt
+  ↓ formatCommandsWithinBudget() → 截断后的 Skill 列表传入 System Prompt
   ↓ AI 选择匹配的 Skill
   ↓ SkillTool.validateInput() → 名称校验 + 存在性检查
   ↓ SkillTool.checkPermissions() → 五层权限检查
   ↓ SkillTool.call() → inline 或 fork 执行
-  ↓ contextModifier() → 注入 allowedTools + model + effort
+  ↓ contextModifier() → 传入 allowedTools + model + effort
   ↓ recordSkillUsage() → 更新使用频率排名
 ```

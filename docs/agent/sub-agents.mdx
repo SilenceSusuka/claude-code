@@ -1,6 +1,6 @@
 ---
 title: "子 Agent 机制 - 权限、流程、同步/异步与 Fork"
-description: "从源码角度解析 Claude Code 子 Agent：AgentTool 的执行链路、权限模式、同步与异步生命周期、任务通知队列、AgentTool fork、slash command fork 与 runForkedAgent 的边界。"
+description: "从源码角度解析 satou code 子 Agent：AgentTool 的执行链路、权限模式、同步与异步生命周期、任务通知队列、AgentTool fork、slash command fork 与 runForkedAgent 的边界。"
 keywords: ["子 Agent", "AgentTool", "权限模式", "同步子 Agent", "异步子 Agent", "forkSubagent", "runForkedAgent"]
 ---
 
@@ -8,7 +8,7 @@ keywords: ["子 Agent", "AgentTool", "权限模式", "同步子 Agent", "异步�
 
 ## 先分清四个概念
 
-Claude Code 里常被一起称为"子 Agent"的东西，其实有四类执行路径：
+satou code 里常被一起称为"子 Agent"的东西，其实有四类执行路径：
 
 | 类型 | 谁触发 | 是否经过 Tool 协议 | 结果怎么回来 | 典型入口 |
 |------|--------|--------------------|--------------|----------|
@@ -151,8 +151,8 @@ You are a focused code reviewer. Prioritize bugs, regressions, and missing tests
 | `requiredMcpServers` | 启动前必须存在的 MCP server 模式 | `AgentTool.call()` 会等待 pending server，最长约 30 秒；没有可用工具则报错 |
 | `mcpServers` | agent 专属 MCP server | `runAgent()` 初始化，生命周期跟随该子 Agent |
 | `hooks` | agent 生命周期内注册的 hooks | `runAgent()` 会注册 frontmatter hooks；agent 停止时清理 session hooks |
-| `skills` | 预加载 skill 名称 | `runAgent()` 会解析并注入对应 skill；插件 skill 支持命名空间或后缀匹配 |
-| `initialPrompt` | 首个 user turn 前置内容 | 可用于启动时固定注入额外说明 |
+| `skills` | 预加载 skill 名称 | `runAgent()` 会解析并传入对应 skill；插件 skill 支持命名空间或后缀匹配 |
+| `initialPrompt` | 首个 user turn 前置内容 | 可用于启动时固定传入额外说明 |
 
 这些字段属于 agent definition，不是 `Agent(...)` 调用参数。调用方不能在一次 `Agent` tool_use 里临时传入 `tools`、`hooks` 或 `skills` 来覆盖 agent 定义。
 
@@ -164,7 +164,7 @@ You are a focused code reviewer. Prioritize bugs, regressions, and missing tests
 |--------|------|------|
 | `SubagentStart` hooks | 子 Agent query loop 启动前 | 允许 hook 修改或补充启动上下文 |
 | frontmatter `hooks` | agent session 初始化时注册 | 只在这个子 Agent 的 session 内生效，结束后清理 |
-| preload `skills` | system prompt / skill 解析阶段 | 把指定 skill 的说明和资源注入 agent 可见上下文 |
+| preload `skills` | system prompt / skill 解析阶段 | 把指定 skill 的说明和资源传入 agent 可见上下文 |
 | agent `memory` | system prompt 构建时 | 按 `user` / `project` / `local` scope 读取 agent memory，并追加到 agent prompt |
 | sidechain transcript | query loop 运行时 | 记录子 Agent 的独立消息链，供恢复、调试和 `SendMessage` 续跑使用 |
 
@@ -361,7 +361,7 @@ runAsyncAgentLifecycle()
 | 后台 shell / monitor 结束或卡住提醒 | `task-notification` | 通知模型命令状态 |
 | remote agent / ultraplan / ultrareview 完成 | `task-notification` | 把远程结果交给本地模型 |
 | scheduled task / cron | `prompt` | 定时触发主模型任务 |
-| Chrome / MCP channel 推送 | `prompt` | 外部系统主动注入消息 |
+| Chrome / MCP channel 推送 | `prompt` | 外部系统主动传入消息 |
 | hook 阻塞错误 | `task-notification` | 唤醒模型处理 stop hook 错误 |
 | orphaned permission response | `orphaned-permission` | 处理工具权限回复比原请求更晚到达的情况 |
 
@@ -584,7 +584,7 @@ assistant / kairos 模式下，它会 fire-and-forget：后台 runner 完成后�
 |------|------|
 | 创建 | 使用 agent id 派生 slug，创建独立 worktree |
 | CWD 覆盖 | `runWithCwdOverride(worktreePath, fn)` 让工具在 worktree 内执行 |
-| fork + worktree | 额外注入路径翻译提示，提醒 worker 重新读取文件 |
+| fork + worktree | 额外传入路径翻译提示，提醒 worker 重新读取文件 |
 | 清理 | 无变更则移除 worktree；有变更则保留并把路径返回给主模型 |
 
 如果 worktree 是 hook-based，代码会保留它，因为无法可靠判断 VCS 变更。

@@ -2,7 +2,7 @@
 // 技术研究报告 workflow。
 // 由 run.ts 通过 @claude-code-best/workflow-engine 的 runWorkflow() 直接执行——
 // 不经 Workflow 工具、不经核心 runAgent。脚本内的 agent / parallel / pipeline /
-// phase / log / args 均为引擎运行时注入的全局（见 src/engine/script.ts 的沙箱）。
+// phase / log / args 均为引擎运行时传入的全局（见 src/engine/script.ts 的沙箱）。
 //
 // 编排：多角度并行调研（parallel 屏障）→ 逐条深挖（pipeline 无屏障）→ 综合成报告。
 

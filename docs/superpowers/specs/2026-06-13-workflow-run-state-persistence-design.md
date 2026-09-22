@@ -6,7 +6,7 @@
 
 ## 问题陈述
 
-Workflow 脚本的 `return` 值和终态 `RunProgress`（status / agents / phases / returnValue / error）只活在 `ProgressStore`（`src/workflow/progress/store.ts`）的内存 Map 里。一旦 Claude Code 进程关闭/重启，全部丢失。
+Workflow 脚本的 `return` 值和终态 `RunProgress`（status / agents / phases / returnValue / error）只活在 `ProgressStore`（`src/workflow/progress/store.ts`）的内存 Map 里。一旦 satou code 进程关闭/重启，全部丢失。
 
 已落盘的 `.claude/workflow-runs/<runId>/journal.jsonl` 只记录每个 `agent()` 调用的结构化结果，**不**包含脚本顶层 `return` 值，也无法重建 `/workflows` 面板需要的 `RunProgress` 摘要。重启后面板为空，对话 agent 也无法按 runId 取回 return 值。
 
@@ -29,7 +29,7 @@ Workflow 脚本的 `return` 值和终态 `RunProgress`（status / agents / phase
 | 文件 | 改动 | 职责 |
 |---|---|---|
 | `src/workflow/persistence.ts` | 新增 | `writeRunState` / `readRunState` / `listPersistedRuns`；原子覆盖写（tmp + rename）；`getRunsDir()` 统一 runsDir 来源 |
-| `src/workflow/progress/store.ts` | 改 | 新增 `hydrate(run: RunProgress): void` —— 绕过 bus 直接注入磁盘 run（用于 `loadPersistedRuns`） |
+| `src/workflow/progress/store.ts` | 改 | 新增 `hydrate(run: RunProgress): void` —— 绕过 bus 直接传入磁盘 run（用于 `loadPersistedRuns`） |
 | `src/workflow/service.ts` | 改 | 订阅 bus `run_done` → `writeRunState`；`getRun(id)` 内存 miss → `readRunState` fallback；新增 `loadPersistedRuns(): Promise<void>` |
 | `src/workflow/panel/WorkflowsPanel.tsx` | 改 | mount 时调一次 `svc.loadPersistedRuns()`（flag 在 service 单例内部守护，panel 无脑调，重复调用是 no-op） |
 | `src/workflow/ports.ts` | 改 | `${getProjectRoot()}/.claude/workflow-runs` 提取为 `getRunsDir()` 共享（消除重复拼接，与 persistence.ts 同源） |
@@ -68,10 +68,10 @@ CLI 重启 → 用户 /workflows → WorkflowsPanel mount
 ```
 service.getRun(id)
   ├─ store.get(id) 命中 → 返回（本次会话的 run）
-  └─ miss → readRunState(runsDir, id) → 返回（历史 run，不注入内存）
+  └─ miss → readRunState(runsDir, id) → 返回（历史 run，不传入内存）
 ```
 
-**不注入内存的取舍**：历史 run 进入内存会污染本次会话的 store / 面板列表语义（"内存 = 本次会话产生的 run"这条不变量要保留）。代价是同会话内反复查同一历史 run 会反复读盘——可接受（查询频率低，文件小）。
+**不传入内存的取舍**：历史 run 进入内存会污染本次会话的 store / 面板列表语义（"内存 = 本次会话产生的 run"这条不变量要保留）。代价是同会话内反复查同一历史 run 会反复读盘——可接受（查询频率低，文件小）。
 
 ## state.json 格式
 
@@ -134,7 +134,7 @@ service.getRun(id)
 
 1. **内存 run 永远优先于磁盘 run** — `store.hydrate` 跳过已存在 runId；`getRun` 内存命中则不读盘。
 2. **磁盘是纯终态快照** — 本次会话 running 中的 run 不写盘；进程在 run 终态前被 SIGKILL/断电/crash，该 run 在磁盘上缺失（连 `run_done` 都来不及发）。这是 A+ 接受的边缘情况。
-3. **磁盘 run 不注入 `getRun` 路径的内存** — 只有 `loadPersistedRuns`（面板 mount）会 hydrate；`getRun` fallback 仅返回，不 hydrate。
+3. **磁盘 run 不传入 `getRun` 路径的内存** — 只有 `loadPersistedRuns`（面板 mount）会 hydrate；`getRun` fallback 仅返回，不 hydrate。
 4. **持久化失败不阻断 workflow** — 写盘是 best-effort，IO 异常只 log 不抛。
 5. **引擎层零改动** — 所有持久化逻辑在 host 侧（`src/workflow/`），引擎 `@claude-code-best/workflow-engine` 接口不变。
 
@@ -149,18 +149,18 @@ service.getRun(id)
 
 ### `src/workflow/__tests__/store.test.ts`（扩展）
 
-- `hydrate(run)` 注入新 runId → `get` 命中、`list` 含该项
+- `hydrate(run)` 传入新 runId → `get` 命中、`list` 含该项
 - `hydrate(run)` 已存在 runId → 跳过（内存值不被磁盘覆盖）
 - `hydrate` 后 `subscribe` listener 被通知
 
-### `src/workflow/__tests__/service.test.ts`（新增 / 扩展）— 注入 fake bus / ports / tmpdir
+### `src/workflow/__tests__/service.test.ts`（新增 / 扩展）— 传入 fake bus / ports / tmpdir
 
 - bus emit `run_done completed` + returnValue → `readRunState(runId)` 命中且 returnValue 一致
 - bus emit `run_done failed` + error → state.json 写入 status=failed + error 字段
 - bus emit `run_done killed` → state.json 写入 status=killed
 - bus emit `run_done` 但 `writeRunState` 抛 IO 错 → service 不抛、其他订阅者（store）仍正常
 - `getRun(id)` 内存命中 → 不读盘（spy 断言 readRunState 未被调）
-- `getRun(id)` 内存 miss + 磁盘命中 → 返回磁盘值；再次 `getRun(id)` 仍读盘（未注入内存）
+- `getRun(id)` 内存 miss + 磁盘命中 → 返回磁盘值；再次 `getRun(id)` 仍读盘（未传入内存）
 - `getRun(id)` 内存 miss + 磁盘 miss → 返回 undefined
 - `loadPersistedRuns()` 扫盘后 `listRuns()` 含历史 run；已有内存 runId 不被磁盘覆盖
 

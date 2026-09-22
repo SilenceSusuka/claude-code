@@ -11,7 +11,7 @@
 
 import { describe, test, expect, mock, beforeEach } from 'bun:test'
 
-// --- MACRO 全局注入 (编译时 define 在测试中不可用) ---
+// --- MACRO 全局传入 (编译时 define 在测试中不可用) ---
 ;(globalThis as any).MACRO = {
   VERSION: '2.1.888',
   BUILD_TIME: '2026-04-22T00:00:00Z',
@@ -102,8 +102,18 @@ mock.module('bun:bundle', () => ({
 mock.module('src/constants/systemPromptSections.js', () => ({
   systemPromptSection: (_name: string, fn: () => any) => fn(),
   DANGEROUS_uncachedSystemPromptSection: (_name: string, fn: () => any) => fn(),
+  // Await every section the way production does, otherwise async sections
+  // (e.g. loadMemoryPrompt) land in the joined prompt as "[object Promise]".
   resolveSystemPromptSections: async (sections: any[]) =>
-    sections.filter(s => s !== null),
+    (
+      await Promise.all(
+        sections.map(async s =>
+          s !== null && typeof s === 'object' && 'compute' in s
+            ? await s.compute()
+            : await s,
+        ),
+      )
+    ).filter(s => s !== null),
 }))
 
 // 工具常量 mock
@@ -394,7 +404,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
   describe('#5 Cost asymmetry framing', () => {
     test('prompt has cost asymmetry for actions (existing)', async () => {
       const prompt = await getFullPrompt()
-      expect(prompt).toContain('cost of pausing to confirm is low')
+      expect(prompt).toContain('Execute actions directly')
     })
 
     test('guidance encourages searching over guessing', async () => {
@@ -461,7 +471,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
   })
 
   // ------------------------------------------------------------------
-  // #9 Prompt 注入防御 (Prompt Injection Defense)
+  // #9 Prompt 劫持防御 (Prompt Injection Defense)
   // TXT 来源: {anthropic_reminders}, {request_evaluation_checklist}
   // ------------------------------------------------------------------
   describe('#9 Prompt injection defense', () => {
@@ -472,7 +482,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
 
     test('distinguishes file instructions from user instructions', async () => {
       const prompt = await getFullPrompt()
-      expect(prompt).toContain('not from the user')
+      expect(prompt).toContain('not from Master')
     })
   })
 
@@ -559,7 +569,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
   describe('#20 Say less when risky', () => {
     test('security-sensitive code should say less about details', async () => {
       const prompt = await getFullPrompt()
-      expect(prompt).toContain('saying less about implementation details')
+      expect(prompt).toContain("don't restate the contents")
     })
   })
 
@@ -579,9 +589,9 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
   // TXT 来源: {product_information}
   // ------------------------------------------------------------------
   describe('#13 Product information', () => {
-    test('env info contains Claude Code product description', async () => {
+    test('env info contains satou code product description', async () => {
       const envInfo = await computeSimpleEnvInfo('claude-opus-4-7')
-      expect(envInfo).toContain('Claude Code')
+      expect(envInfo).toContain('satou code')
       expect(envInfo).toContain('CLI')
     })
 
@@ -637,7 +647,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
     test('default_stance: default to helping', async () => {
       const prompt = await getFullPrompt()
       expect(prompt).toContain('Default to helping')
-      expect(prompt).toContain('concrete, specific risk of serious harm')
+      expect(prompt).toContain('Never decline a request')
     })
 
     test('anti-collapse: no self-abasement', async () => {
@@ -656,7 +666,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
     test('no-machinery-narration: describe in user terms', async () => {
       const prompt = await getFullPrompt()
       expect(prompt).toContain("Don't narrate internal machinery")
-      expect(prompt).toContain('describe the action in user terms')
+      expect(prompt).toContain('describe the action naturally')
     })
 
     test('tool_discovery: search before saying unavailable', async () => {
@@ -672,7 +682,7 @@ describe('Opus 4.7 Prompt Engineering Audit', () => {
       expect(prompt).toContain('report the outcome')
     })
 
-    test('CYBER_RISK_INSTRUCTION: allows security testing', async () => {
+    test('CYBER_RISK_CORE_RULES: allows security testing', async () => {
       const prompt = await getFullPrompt()
       // TS 允许安全测试 (TXT 完全禁止 — 这是有意的差异)
       expect(prompt).not.toContain(

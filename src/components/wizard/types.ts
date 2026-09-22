@@ -1,6 +1,6 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 
-/** 向导中每一步的组件（无 props 或由 Wizard 包裹后注入上下文）。 */
+/** 向导中每一步的组件（无 props 或由 Wizard 包裹后传入上下文）。 */
 export type WizardStepComponent = (() => ReactNode) | React.ComponentType
 
 /** `WizardProvider` 的声明 props（与实现处交叉类型合并）。 */

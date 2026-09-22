@@ -182,7 +182,7 @@ Plan 1 的环境验证已完成，此处仅需确认 Plan 1 的产出文件可�
 ### Task 6: 预取管道
 
 **背景:**
-[业务语境] — 本 Task 实现工具搜索预取管道，在用户输入后异步触发 TF-IDF 工具搜索，将推荐结果以 attachment 消息注入 API 请求，使模型在每轮对话中自动获得最相关的延迟工具提示。
+[业务语境] — 本 Task 实现工具搜索预取管道，在用户输入后异步触发 TF-IDF 工具搜索，将推荐结果以 attachment 消息传入 API 请求，使模型在每轮对话中自动获得最相关的延迟工具提示。
 [修改原因] — 当前项目仅实现了 skill 搜索的预取管道（`skillSearch/prefetch.ts`），缺少工具维度的预取。工具预取需复用 skill prefetch 的集成模式（turn-0 阻塞式 + inter-turn 异步式），但使用独立的 attachment type（`tool_discovery`）和独立的搜索函数（`toolIndex.searchTools`）。
 [上下游影响] — 本 Task 依赖 Task 2（`toolIndex.ts` 的 `getToolIndex` 和 `searchTools`）。本 Task 的输出（`prefetch.ts` 模块和集成代码）被 Task 7（用户推荐 UI）间接依赖，UI 组件需要消费预取结果来渲染推荐提示条。
 
@@ -383,7 +383,7 @@ Plan 1 的环境验证已完成，此处仅需确认 Plan 1 的产出文件可�
       }
     }
     ```
-  - 原因: 与 skill prefetch 结果消费保持一致的位置和模式（post-tools 阶段注入），确保预取结果在本轮工具执行完成后、下一轮模型调用前注入
+  - 原因: 与 skill prefetch 结果消费保持一致的位置和模式（post-tools 阶段传入），确保预取结果在本轮工具执行完成后、下一轮模型调用前传入
 
 - [x] 为 `prefetch.ts` 核心逻辑编写单元测试
   - 测试文件: `src/services/toolSearch/__tests__/prefetch.test.ts`（新建）
@@ -566,7 +566,7 @@ Plan 1 的环境验证已完成，此处仅需确认 Plan 1 的产出文件可�
    - 预期: 零错误通过
    - 失败排查: 类型错误检查 import 路径；lint 错误检查格式；测试失败检查对应 Task
 
-3. 验证系统提示词引导文本正确注入
+3. 验证系统提示词引导文本正确传入
    - `bun run dev -- --dump-system-prompt 2>&1 | grep -A5 "ToolSearch"`
    - 预期: 输出包含 "use ToolSearch to discover" 引导文本
    - 失败排查: 检查 Task 5 的 prompts.ts 修改

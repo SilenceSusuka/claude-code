@@ -1,5 +1,5 @@
 /**
- * Permission bridge: maps Claude Code's canUseTool / PermissionDecision
+ * Permission bridge: maps satou code's canUseTool / PermissionDecision
  * system to ACP's requestPermission() flow.
  *
  * Supports:
@@ -304,7 +304,7 @@ function checkTerminalOutput(clientCapabilities?: ClientCapabilities): boolean {
   if (!clientCapabilities) return false
   // Standard ACP v1 capability: ClientCapabilities.terminal (boolean).
   if (clientCapabilities.terminal === true) return true
-  // Legacy Claude-Code clients advertised terminal support via _meta before
+  // Legacy ACP clients advertised terminal support via _meta before
   // the standard `terminal` boolean existed. `_meta` is reserved per the spec,
   // but we keep this fallback for backward compatibility with older clients.
   const meta = (clientCapabilities as unknown as Record<string, unknown>)._meta

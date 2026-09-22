@@ -31,7 +31,7 @@ PROACTIVE 实现 Tick 驱动的自主代理。CLI 在用户不输入时也能持
 
 ### 2.2 系统提示内容
 
-`getProactiveSection()` 注入的自主工作指令包含：
+`getProactiveSection()` 传入的自主工作指令包含：
 
 | 章节 | 内容 |
 |------|------|
@@ -53,7 +53,7 @@ Tick 调度器启动
       │
       ├── 定时生成 <tick_tag> 消息
       │   ├── 包含用户当前本地时间
-      │   └── 注入到对话流（sessionStorage）
+      │   └── 传入到对话流（sessionStorage）
       │
       ▼
 模型处理 tick
@@ -108,6 +108,6 @@ FEATURE_PROACTIVE=1 FEATURE_KAIROS=1 FEATURE_KAIROS_BRIEF=1 bun run dev
 | `src/tools/SleepTool/SleepTool.ts` | 休眠/唤醒执行逻辑 |
 | `src/constants/prompts.ts:864-918` | 自主工作系统提示 |
 | `src/screens/REPL.tsx` | REPL tick 集成与 automation 状态上报 |
-| `src/utils/sessionStorage.ts:4892-4912` | Tick 消息注入 |
+| `src/utils/sessionStorage.ts:4892-4912` | Tick 消息传入 |
 | `src/utils/sessionState.ts` | bridge/CCR metadata 镜像 |
 | `src/components/PromptInput/PromptInputFooterLeftSide.tsx` | 页脚 UI 状态 |

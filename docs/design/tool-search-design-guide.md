@@ -4,7 +4,7 @@
 
 ## 1. 问题背景
 
-Claude Code 内置了 60+ 工具，加上用户连接的 MCP 服务器可能引入数十甚至上百个额外工具。将所有工具的完整 schema 一次性发送给模型，会产生几个严重问题：
+satou code 内置了 60+ 工具，加上用户连接的 MCP 服务器可能引入数十甚至上百个额外工具。将所有工具的完整 schema 一次性发送给模型，会产生几个严重问题：
 
 1. **Token 爆炸** — 每个工具定义（name + description + inputSchema）平均消耗数百 token，60 个工具就是数万 token 的常量开销。
 2. **Prompt Cache 失效** — 工具列表作为 prompt 的一部分参与缓存计算。任何工具的增减（如 MCP 服务器连接/断开）都会导致整段缓存失效。
@@ -17,7 +17,7 @@ ToolSearch 采用 **延迟加载（Deferred Loading）** 模式：
 - 将工具分为 **Core Tools**（始终加载）和 **Deferred Tools**（按需发现）
 - 模型通过 `SearchExtraTools` 工具搜索并发现 deferred tools
 - 通过 `ExecuteExtraTool` 工具代理执行发现的 deferred tools
-- **工具数组在会话中保持稳定**，不再动态注入已发现的 deferred tools（v3 修复的关键决策）
+- **工具数组在会话中保持稳定**，不再动态传入已发现的 deferred tools（v3 修复的关键决策）
 
 ## 3. 核心架构
 
@@ -63,7 +63,7 @@ isDeferredTool(tool) =
 │  API Layer (src/services/api/claude.ts)              │
 │  ├─ 判定是否启用 ToolSearch                          │
 │  ├─ 过滤 deferred tools 不进入 API tools 数组         │
-│  ├─ 注入 <available-deferred-tools> 或 delta 附件    │
+│  ├─ 传入 <available-deferred-tools> 或 delta 附件    │
 │  └─ 处理 tool_reference/text 格式的消息归一化         │
 ├──────────────────────────────────────────────────────┤
 │  Query Loop (src/query.ts)                           │
@@ -125,7 +125,7 @@ ExecuteTool.call() 在全局工具注册表中查找 CronCreate
 
 ### 3.5 Prompt Cache 稳定性策略（v3 关键修复）
 
-**问题**：早期版本在发现 deferred tool 后会将其注入 API tools 数组，导致每次发现新工具时 tools JSON 变化，prompt cache 全面失效。
+**问题**：早期版本在发现 deferred tool 后会将其传入 API tools 数组，导致每次发现新工具时 tools JSON 变化，prompt cache 全面失效。
 
 **修复**（commit `c14b7ead`）：deferred tools **始终不进入 API tools 数组**。tools 数组在整个会话中只包含 core tools + SearchExtraTools + ExecuteExtraTool，保持稳定。
 
@@ -141,7 +141,7 @@ API Tools 数组（会话期间不变）:
 
 ### 4.1 两个触发时机
 
-1. **Turn-zero**（`getTurnZeroSearchExtraToolsPrefetch`）— 用户输入第一轮时，基于输入文本搜索相关 deferred tools，以 attachment 形式注入
+1. **Turn-zero**（`getTurnZeroSearchExtraToolsPrefetch`）— 用户输入第一轮时，基于输入文本搜索相关 deferred tools，以 attachment 形式传入
 2. **Inter-turn**（`startSearchExtraToolsPrefetch`）— assistant turn 结束后，基于对话上下文异步搜索
 
 ### 4.2 Attachment 管道
@@ -174,10 +174,10 @@ prefetch → Attachment(type: 'tool_discovery')
 
 ## 6. Deferred Tools Delta 机制
 
-对于 Anthropic 内部用户（`USER_TYPE=ant`）或启用了 `tengu_glacier_2xr` feature flag 的用户，使用 **delta attachment** 替代 `<available-deferred-tools>` 头部注入：
+对于 Anthropic 内部用户（`USER_TYPE=ant`）或启用了 `tengu_glacier_2xr` feature flag 的用户，使用 **delta attachment** 替代 `<available-deferred-tools>` 头部传入：
 
-- 首次：注入完整的 deferred tools 列表
-- 后续：只注入增量变化（新增/移除）
+- 首次：传入完整的 deferred tools 列表
+- 后续：只传入增量变化（新增/移除）
 - 优势：不会因为工具池变化导致整个头部缓存失效
 
 Delta attachment 扫描历史消息中的 `deferred_tools_delta` 类型 attachment，重建已宣告集合，然后差分计算当前 deferred pool 的变化。
@@ -217,12 +217,12 @@ Delta attachment 扫描历史消息中的 `deferred_tools_delta` 类型 attachme
 
 **7 个文件，+46/-31 行**
 
-- **移除 "discover then include" 逻辑** — 发现的 deferred tools 不再注入 tools 数组
+- **移除 "discover then include" 逻辑** — 发现的 deferred tools 不再传入 tools 数组
 - **tools 数组保持稳定** — 只有 core tools + SearchExtraTools + ExecuteExtraTool
 - **强化优先级引导** — core tools 直接调用，ToolSearch 仅作为发现 deferred tools 的手段
 - **已加载工具拒绝提示** — 搜索 core tool 时返回明确拒绝
 
-**设计决策**：prompt cache 是 Claude Code 性能优化的关键。每次 tools JSON 变化都会导致缓存失效，代价远大于通过 ExecuteExtraTool 代理调用 deferred tools 的额外 token。因此选择牺牲一点直接调用的便利性，换取 cache 稳定性。
+**设计决策**：prompt cache 是 satou code 性能优化的关键。每次 tools JSON 变化都会导致缓存失效，代价远大于通过 ExecuteExtraTool 代理调用 deferred tools 的额外 token。因此选择牺牲一点直接调用的便利性，换取 cache 稳定性。
 
 ### v4: Agents/Teams 延迟化（`af0d7dc8`）
 
@@ -310,7 +310,7 @@ ToolSearch 和 SkillSearch 是平行的搜索系统，共享底层算法但服�
 | 维度 | ToolSearch | SkillSearch |
 |------|-----------|-------------|
 | 搜索对象 | Deferred 工具（内置 + MCP） | 用户技能（skill） |
-| 执行方式 | `ExecuteExtraTool` 代理调用 | 直接注入 attachment 内容 |
+| 执行方式 | `ExecuteExtraTool` 代理调用 | 直接传入 attachment 内容 |
 | 字段权重 | name:3.0, searchHint:2.5, desc:1.0 | name:3.0, whenToUse:2.0, desc:1.0 |
 | 缓存策略 | 按工具名列表缓存 | 按 cwd 缓存 |
 | 去重集合 | `discoveredToolsThisSession` | 独立的 Set |

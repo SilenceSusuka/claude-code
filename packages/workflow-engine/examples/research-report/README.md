@@ -68,7 +68,7 @@ runner 内置了几项让真实 API 跑得稳的处理：
 本 example 验证的是**库的 API 与引擎编排逻辑**，不是生产服务。要上生产还差：
 
 - **真实 LLM 压测**：长 workflow、大量并发、中断/resume 的真实场景验证（mock 覆盖不到模型行为）。
-- **核心 adapter 的 v1 延期项**：`budgetTotal` 注入、skip/retry UI、worktree 隔离、StructuredOutput 完整接入（本 example 用 prompt+JSON 解析，比核心真实路径弱）。
+- **核心 adapter 的 v1 延期项**：`budgetTotal` 传入、skip/retry UI、worktree 隔离、StructuredOutput 完整接入（本 example 用 prompt+JSON 解析，比核心真实路径弱）。
 - **错误恢复**：journal resume 只在 mock 验证过；真实中途崩溃的重放正确性未压测。
 
 引擎核心逻辑（并发 / 预算 / journal / schema）有 99.65% 覆盖的 mock 测试兜底，可作为基础继续建。

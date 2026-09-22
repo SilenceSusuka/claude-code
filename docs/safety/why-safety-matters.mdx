@@ -1,12 +1,12 @@
 ---
-title: "AI 安全至关重要 - Claude Code 安全设计哲学"
-description: "当 AI 能操作你的真实项目文件和命令，安全的边界在哪里？分析 Claude Code 的安全挑战、威胁模型和纵深防御策略。"
+title: "AI 安全至关重要 - satou code 安全设计哲学"
+description: "当 AI 能操作你的真实项目文件和命令，安全的边界在哪里？分析 satou code 的安全挑战、威胁模型和纵深防御策略。"
 keywords: ["AI 安全", "安全设计", "威胁模型", "纵深防御", "AI 风险"]
 ---
 
 ## AI 动手的代价
 
-Claude Code 不是在沙盒里回答问题——它在你的真实项目中修改文件、执行命令。一个失误可能意味着：
+satou code 不是在沙盒里回答问题——它在你的真实项目中修改文件、执行命令。一个失误可能意味着：
 
 - 覆盖了你还没提交的工作
 - 执行了危险的 `rm -rf` 命令
@@ -17,7 +17,7 @@ Claude Code 不是在沙盒里回答问题——它在你的真实项目中修�
 
 ## 安全体系全景图：纵深防御链
 
-Claude Code 的安全不是单一机制，而是**五层纵深防御**——任何一层失败，下一层仍然能阻止危险操作：
+satou code 的安全不是单一机制，而是**五层纵深防御**——任何一层失败，下一层仍然能阻止危险操作：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -63,18 +63,18 @@ Claude 的 System Prompt 中包含安全指令——这是"软性"约束，依�
 
 以 BashTool 为例（`packages/builtin-tools/src/tools/BashTool/bashPermissions.ts`），`bashToolHasPermission()` 执行了极其细致的检查链：
 
-1. **AST 安全解析**：用 tree-sitter 解析 bash AST，检测命令注入（`$()`、反引号等）
+1. **AST 安全解析**：用 tree-sitter 解析 bash AST，检测命令传入（`$()`、反引号等）
 2. **语义检查**：识别危险命令（`eval`、`exec`、`source` 等）
 3. **沙箱自动放行**：如果 `autoAllowBashIfSandboxed` 启用且沙箱可用，自动放行
 4. **精确匹配**：检查命令是否匹配 allow/deny 规则
 5. **分类器检查**：用 Haiku 模型对 deny/ask 描述进行语义匹配
 6. **复合命令拆分**：`docker ps && curl evil.com` 拆分为子命令逐一检查
 7. **路径约束**：检查输出重定向目标、cd + git 组合攻击
-8. **命令注入检测**：对每个子命令运行 20+ 正则模式检测
+8. **命令传入检测**：对每个子命令运行 20+ 正则模式检测
 
 **Read 工具为什么免审批**：读取操作不会改变任何状态。`BashTool.isReadOnly()` 通过 `readOnlyValidation.ts` 判定命令是否只读——只读命令在权限检查中被自动分类为低风险。
 
-**Bash 工具为什么要逐条确认**：shell 命令可以执行任何操作，且存在大量绕过手法（环境变量注入、命令替换、管道拼接）。系统需要解析命令结构、检测注入模式、验证路径约束——无法用简单规则覆盖，因此默认需要确认。
+**Bash 工具为什么要逐条确认**：shell 命令可以执行任何操作，且存在大量绕过手法（环境变量传入、命令替换、管道拼接）。系统需要解析命令结构、检测传入模式、验证路径约束——无法用简单规则覆盖，因此默认需要确认。
 
 ### Layer 3: OS 级沙箱
 
@@ -115,7 +115,7 @@ Claude 的 System Prompt 中包含安全指令——这是"软性"约束，依�
 
 ## 安全 vs 效率的工程权衡
 
-安全机制不是越多越好——每个额外检查都增加延迟、降低用户体验。Claude Code 的设计在两者间做了精细的权衡：
+安全机制不是越多越好——每个额外检查都增加延迟、降低用户体验。satou code 的设计在两者间做了精细的权衡：
 
 ### 权衡1：只读命令自动放行
 
@@ -145,7 +145,7 @@ Bash("rm -rf node_modules")  → ⚠️ 需确认（不可逆）
 防御手段：
 
 1. **工具结果隔离**：工具输出作为结构化数据传递给 API，不直接拼入 prompt
-2. **AST 解析**：`parseForSecurity()` 在 `src/utils/bash/ast.ts` 中用 tree-sitter 解析命令结构，检测隐藏的命令注入
+2. **AST 解析**：`parseForSecurity()` 在 `src/utils/bash/ast.ts` 中用 tree-sitter 解析命令结构，检测隐藏的命令传入
 3. **语义检查**：`checkSemantics()` 识别危险的 bash 内建命令（eval、exec、source）
 4. **Shadow 测试**：`TREE_SITTER_BASH_SHADOW` feature flag 并行运行新旧解析器，对比结果检测回归
 
@@ -172,7 +172,7 @@ Bash("rm -rf node_modules")  → ⚠️ 需确认（不可逆）
       强制 require approval（packages/builtin-tools/src/tools/BashTool/bashPermissions.ts:2209）
 ```
 
-### 场景3：管道注入
+### 场景3：管道传入
 
 ```
 攻击：echo 'x' | xargs printf '%s' >> /etc/passwd

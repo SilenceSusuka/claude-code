@@ -2,7 +2,7 @@
 
 - **Flow id**: `recurring-bug-loop-oom` (pilot flow for autonomy ↔ deep-debug binding)
 - **Branch**: `fix/loop-scheduled-autonomy-oom`
-- **Worktree**: `E:\Source_code\Claude-code-bast-loop-scheduled-oom-fix`
+- **Worktree**: `E:\Source_code\satou-code-bast-loop-scheduled-oom-fix`
 - **Author**: back-filled from existing working-tree diff (no commits ahead of `main`)
 - **Status**: `report` (this document) — pending human approval before `regression-test` advances
 

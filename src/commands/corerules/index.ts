@@ -1,15 +1,15 @@
 import type { Command } from '../../commands.js'
 
-const keysmith = {
+const corerules = {
   type: 'local',
-  name: 'keysmith',
+  name: 'corerules',
   description:
-    'Bridge claude-keysmith instruction content into the /follow network-layer injection',
+    'Bridge Core Rules content into the /follow network layer',
   argumentHint: '[status|import|reimport|off]',
   immediate: true,
   disableModelInvocation: true,
   supportsNonInteractive: true,
-  load: () => import('./keysmith.js'),
+  load: () => import('./corerules.js'),
 } satisfies Command
 
-export default keysmith
+export default corerules

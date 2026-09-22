@@ -1,7 +1,7 @@
 # `/autofix-pr` 命令实现规格文档
 
 > **状态**：规划阶段（2026-04-29），等待评审通过后进入实施。
-> **Worktree**：`E:\Source_code\Claude-code-bast-autofix-pr`，分支 `feat/autofix-pr`，基于 `origin/main` 4f1649e2。
+> **Worktree**：`E:\Source_code\satou-code-bast-autofix-pr`，分支 `feat/autofix-pr`，基于 `origin/main` 4f1649e2。
 > **架构**：R（Remote-via-CCR），完整版（含 stop 子命令、单例锁、subscribePR、in-process teammate、skills 探测）。
 
 ---
@@ -10,7 +10,7 @@
 
 ### 1.1 问题
 
-本仓库（`Claude-code-bast`）是 Anthropic 官方 `@anthropic-ai/claude-code` 的反编译/重构版本。许多远程能力被 stub 化处理 —— `/autofix-pr` 是其中之一：
+本仓库（`satou-code-bast`）是 Anthropic 官方 `@anthropic-ai/claude-code` 的反编译/重构版本。许多远程能力被 stub 化处理 —— `/autofix-pr` 是其中之一：
 
 ```js
 // src/commands/autofix-pr/index.js（当前 stub）
@@ -714,7 +714,7 @@ bun run test:all       # 必须全绿
 ```bash
 # 完全撤回本次实现
 git checkout main
-git worktree remove E:/Source_code/Claude-code-bast-autofix-pr
+git worktree remove E:/Source_code/satou-code-bast-autofix-pr
 git branch -D feat/autofix-pr
 ```
 
@@ -743,9 +743,9 @@ git branch -D feat/autofix-pr
 
 | 路径 | 角色 |
 |---|---|
-| `E:\Source_code\Claude-code-bast-autofix-pr` | 实施 worktree |
+| `E:\Source_code\satou-code-bast-autofix-pr` | 实施 worktree |
 | `C:\Users\12180\.local\bin\claude.exe` | 反编译来源（242MB Bun 编译产物） |
-| `C:\Users\12180\.claude\projects\E--Source-code-Claude-code-bast\memory\project_autofix_pr_implementation.md` | 内存备忘（精简版） |
+| `C:\Users\12180\.claude\projects\E--Source-code-satou-code-bast\memory\project_autofix_pr_implementation.md` | 内存备忘（精简版） |
 | `src/commands/review/reviewRemote.ts` | 主模板 |
 | `src/utils/teleport.tsx:947` | `teleportToRemote` 入口 |
 | `src/tasks/RemoteAgentTask/RemoteAgentTask.tsx:103` | `REMOTE_TASK_TYPES` |

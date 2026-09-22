@@ -1,12 +1,12 @@
 ---
 title: "MCP 配置 - 多来源合并、作用域与策略管控"
-description: "详细说明 Claude Code MCP 配置的来源层次、合并优先级、传输类型、企业策略管控、插件集成和保留名称机制。"
+description: "详细说明 satou code MCP 配置的来源层次、合并优先级、传输类型、企业策略管控、插件集成和保留名称机制。"
 keywords: ["MCP", "配置", "settings.json", ".mcp.json", "企业策略", "插件"]
 ---
 
 ## 配置来源与作用域
 
-Claude Code 的 MCP 配置来自多个来源，每个来源对应一个 `scope`（作用域）。配置按优先级合并，高优先级来源的同名配置覆盖低优先级。
+satou code 的 MCP 配置来自多个来源，每个来源对应一个 `scope`（作用域）。配置按优先级合并，高优先级来源的同名配置覆盖低优先级。
 
 ### 来源列表
 
@@ -129,7 +129,7 @@ HTTP 流式传输。
 `sse-ide` 和 `ws-ide` 是 IDE 扩展专用类型，不由用户直接配置。
 
 - `sse-ide`：使用 lockfile token 认证
-- `ws-ide`：使用 `X-Claude-Code-Ide-Authorization` header
+- `ws-ide`：使用 `X-satou-code-Ide-Authorization` header
 
 ### SDK 类型（内部）
 
@@ -190,7 +190,7 @@ for (const [name, config] of Object.entries(projectServers)) {
 }
 ```
 
-首次打开项目时，Claude Code 会提示用户审批 `.mcp.json` 中的每个服务器。审批状态持久化在本地配置中。
+首次打开项目时，satou code 会提示用户审批 `.mcp.json` 中的每个服务器。审批状态持久化在本地配置中。
 
 ## 插件 MCP 集成
 
@@ -273,7 +273,7 @@ MCP 配置中的环境变量支持 `$VAR` 和 `${VAR}` 语法展开：
 
 ## 内置 MCP 动态注册
 
-内置 MCP 服务器在 `main.tsx` 启动流程中动态注入配置：
+内置 MCP 服务器在 `main.tsx` 启动流程中动态传入配置：
 
 ### Computer Use MCP
 

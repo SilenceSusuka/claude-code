@@ -4,7 +4,7 @@ import { afterAll, afterEach, describe, expect, mock, test } from 'bun:test'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import * as settingsModule from '../settings/settings.js'
-import type { FollowPromptDirs } from '../instructionFollow.js'
+import type { FollowPromptDirs } from '../coreRulesFollow.js'
 
 let mockSettings: Record<string, unknown> = {}
 let lastUpdate: { source: string; patch: Record<string, unknown> } | null = null
@@ -24,7 +24,7 @@ afterAll(() => {
 })
 
 const {
-  applyInstructionFollowToSystem,
+  applyCoreRulesToSystem,
   createFollowProfile,
   formatFollowSystemSection,
   formatFollowTailContent,
@@ -32,12 +32,12 @@ const {
   isValidFollowProfileName,
   listFollowProfiles,
   loadFollowPrompt,
-  resetInstructionFollowStateForTests,
+  resetCoreRulesStateForTests,
   resolveFollowProfile,
   setActiveFollowProfileName,
 } = (await import(
-  '../instructionFollow.js'
-)) as typeof import('../instructionFollow.js')
+  '../coreRulesFollow.js'
+)) as typeof import('../coreRulesFollow.js')
 
 function makeDirs(): FollowPromptDirs & { root: string } {
   const root = mkdtempSync(join(tmpdir(), 'follow-prompts-'))
@@ -56,9 +56,9 @@ function writeProfile(dir: string, name: string, body: string): string {
   return filePath
 }
 
-describe('instructionFollow', () => {
+describe('coreRulesFollow', () => {
   afterEach(() => {
-    resetInstructionFollowStateForTests()
+    resetCoreRulesStateForTests()
     mockSettings = {}
     lastUpdate = null
   })
@@ -123,7 +123,7 @@ describe('instructionFollow', () => {
     if ('path' in created) {
       expect(created.path).toBe(join(dirs.userDir, 'roleplay.md'))
       const loaded = loadFollowPrompt('roleplay', dirs)
-      expect(loaded?.content.includes('指令遵循：roleplay')).toBe(true)
+      expect(loaded?.content.includes('<core_rules>')).toBe(true)
     }
     const duplicate = createFollowProfile('roleplay', dirs)
     expect('error' in duplicate).toBe(true)
@@ -138,30 +138,30 @@ describe('instructionFollow', () => {
       content: 'Always write tests first.',
     }
     const system = formatFollowSystemSection(profile)
-    expect(system).toContain('# Sticky Instruction Follow (code)')
+    expect(system).toContain('# Sticky Core Rules (code)')
     expect(system).toContain('Always write tests first.')
     expect(system).not.toContain('may or may not be relevant')
 
     const tail = formatFollowTailContent(profile)
-    expect(tail.startsWith('<instruction-follow name="code">')).toBe(true)
+    expect(tail.startsWith('<core-rules name="code">')).toBe(true)
     expect(tail).toContain('Always write tests first.')
-    expect(tail.endsWith('</instruction-follow>')).toBe(true)
+    expect(tail.endsWith('</core-rules>')).toBe(true)
   })
 
-  test('applyInstructionFollowToSystem appends after existing blocks', () => {
+  test('applyCoreRulesToSystem appends after existing blocks', () => {
     const profile = {
       name: 'code',
       path: '/tmp/code.md',
       source: 'user' as const,
       content: 'Keep diffs small.',
     }
-    const result = applyInstructionFollowToSystem(['base prompt'], profile)
+    const result = applyCoreRulesToSystem(['base prompt'], profile)
     expect(result[0]).toBe('base prompt')
     expect(result[1]).toContain('Keep diffs small.')
   })
 
-  test('applyInstructionFollowToSystem is a no-op without a profile', () => {
-    expect(applyInstructionFollowToSystem(['base'], null)).toEqual(['base'])
+  test('applyCoreRulesToSystem is a no-op without a profile', () => {
+    expect(applyCoreRulesToSystem(['base'], null)).toEqual(['base'])
   })
 
   test('resolveFollowProfile returns null for missing names', () => {
@@ -175,10 +175,10 @@ describe('instructionFollow', () => {
     setActiveFollowProfileName('code')
     expect(getActiveFollowProfileName()).toBe('code')
     expect(lastUpdate?.source).toBe('userSettings')
-    expect(lastUpdate?.patch.instructionFollowProfile).toBe('code')
+    expect(lastUpdate?.patch.coreRulesProfile).toBe('code')
 
     setActiveFollowProfileName(null)
     expect(getActiveFollowProfileName()).toBeNull()
-    expect(lastUpdate?.patch.instructionFollowProfile).toBeUndefined()
+    expect(lastUpdate?.patch.coreRulesProfile).toBeUndefined()
   })
 })

@@ -4,7 +4,7 @@ const mockParseDeepLink = mock((uri: string) => {
   if (uri === null || uri === undefined || uri === 'bad-uri') {
     throw new Error('invalid deep link')
   }
-  return { query: 'hello', cwd: 'E:/Source_code/Claude-code-bast-test' }
+  return { query: 'hello', cwd: 'E:/Source_code/satou-code-test' }
 })
 const mockLaunchInTerminal = mock(async () => true)
 

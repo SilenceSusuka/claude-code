@@ -9,7 +9,7 @@ export function toLoggerDetail(detail: unknown): LoggerDetail | undefined {
   return detail instanceof Error ? detail : undefined
 }
 
-/** 宿主注入的日志接口，与 DebugLogger（util.format）对齐。 */
+/** 宿主传入的日志接口，与 DebugLogger（util.format）对齐。 */
 export interface Logger {
   info: (message: string, detail?: LoggerDetail) => void // 信息
   error: (message: string, detail?: LoggerDetail) => void // 错误

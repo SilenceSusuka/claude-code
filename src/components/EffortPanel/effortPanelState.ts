@@ -90,7 +90,7 @@ export function getInitialCursor(args: {
   return args.displayed
 }
 
-// ---- 确认/取消决策（注入 ApplyFn 避免循环依赖 + 便于测试）----
+// ---- 确认/取消决策（传入 ApplyFn 避免循环依赖 + 便于测试）----
 
 export type ConfirmOutcome =
   | {

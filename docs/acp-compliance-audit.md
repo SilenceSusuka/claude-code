@@ -54,7 +54,7 @@
    },
   ~~~
 
-  (B) 若要保留图片能力,在 promptToQueryInput 中处理 image block,将其作为 image content block 注入 query input（需 QueryEngine.submitMessage 支持多模态输入）:
+  (B) 若要保留图片能力,在 promptToQueryInput 中处理 image block,将其作为 image content block 传入 query input（需 QueryEngine.submitMessage 支持多模态输入）:
 
   ~~~diff
    } else if (b.type === 'image') {
@@ -360,7 +360,7 @@
 ### 4.1 [critical] usage_update 非稳定 v1 SessionUpdate 判别器 🔶 已撤销原修复 (2026-06-19)
 
 - 位置: `src/services/acp/bridge/forwarding.ts` (forwardSessionUpdates, 'result' 情况)
-- 规范要求: ACP v1 稳定版 schema schema.json:2942-3108 定义 SessionUpdate 为通过 propertyName `sessionUpdate` 进行 oneOf 判别,包含 10 个有效常量: `user_message_chunk`、`agent_message_chunk`、`agent_thought_chunk`、`tool_call`、`tool_call_update`、`plan`、`available_commands_update`、`current_mode_update`、`config_option_update`、`session_info_update`。`usage_update` 不在 v1 稳定版规范中。（Claude Code 捆绑的 SDK schema v0.19.0 第 5789 行将其标记为 "UNSTABLE——此功能尚未包含在规范中,随时可能被删除或更改"。）
+- 规范要求: ACP v1 稳定版 schema schema.json:2942-3108 定义 SessionUpdate 为通过 propertyName `sessionUpdate` 进行 oneOf 判别,包含 10 个有效常量: `user_message_chunk`、`agent_message_chunk`、`agent_thought_chunk`、`tool_call`、`tool_call_update`、`plan`、`available_commands_update`、`current_mode_update`、`config_option_update`、`session_info_update`。`usage_update` 不在 v1 稳定版规范中。（satou code 捆绑的 SDK schema v0.19.0 第 5789 行将其标记为 "UNSTABLE——此功能尚未包含在规范中,随时可能被删除或更改"。）
 - **决策回滚**: 原修复（2026-06-19 早期）完全移除了 `usage_update` 以追求严格 v1 stable 合规。但现实中所有主流 ACP 客户端（Zed、Cursor 等）实现的是 unstable spec,移除 `usage_update` 后客户端 context 使用量一律显示 `0/0`,严重破坏 UX。鉴于:
   - SDK 已包含 `UsageUpdate` 类型(`sessionUpdate: 'usage_update'`, 字段 `used` + `size` + 可选 `cost`)
   - `PromptResponse.usage` 也已由 SDK 在根部支持(UNSTABLE 但被广泛实现)
@@ -378,7 +378,7 @@
 - 位置: `src/services/acp/bridge.ts` `toAcpNotifications` 的 `tool_use` 分支 alreadyCached 路径
 - 规范要求: schema.json:3525-3548 ToolCallStatus 枚举为 `pending`、`in_progress`、`completed`、`failed`。tool-calls.mdx:76-91 ('Updating') 文档化了一个生命周期,其中 Agent 在工具实际运行时报告 `status: 'in_progress'`。v1 规范称工具 "在其生命周期中会经历不同状态"。
 - 修复: 当同一 tool_use 块被第二次遇到时(streaming `content_block_start` 首次 + assistant 完整消息回放第二次),发 `tool_call_update` with `status: 'in_progress'`。此时语义为"input 已收齐,即将执行"。完整 ToolCallStatus 生命周期现在是 pending → in_progress → completed|failed。
-- 修复建议: 当 Claude Code 知道工具开始执行时,发出一个中间的 tool_call_update:
+- 修复建议: 当 satou code 知道工具开始执行时,发出一个中间的 tool_call_update:
 
   ~~~ts
   { sessionUpdate: 'tool_call_update', toolCallId, status: 'in_progress' }
@@ -406,7 +406,7 @@
 
 - 位置: `src/services/acp/bridge.ts` `toolUpdateFromToolResult` Bash 分支
 - 规范要求: schema.json 将 `_meta` 记录为保留的扩展点（"实现不得对这些键上的值做出假设"）。建议使用反向 DNS / 供应商命名空间的自定义键。
-- 修复: 与 §5.2 合并处理 — 完全删除了 `terminal_info` / `terminal_output` / `terminal_exit` 三个非标准 `_meta` 键,以及伪造的 `terminalId`。Bash 工具结果现在统一走 inline `{type:'text'}` content,不再向 `_meta` 注入任何键。命名空间问题随之消失。
+- 修复: 与 §5.2 合并处理 — 完全删除了 `terminal_info` / `terminal_output` / `terminal_exit` 三个非标准 `_meta` 键,以及伪造的 `terminalId`。Bash 工具结果现在统一走 inline `{type:'text'}` content,不再向 `_meta` 传入任何键。命名空间问题随之消失。
 
 ---
 
@@ -416,20 +416,20 @@
 
 - 位置: `src/services/acp/permissions.ts:280-285` (checkTerminalOutput)
 - 规范要求: ClientCapabilities schema (schema.json:586-613) defines the standard terminal capability as the boolean field `clientCapabilities.terminal` (line 606-610, default false)。Terminals doc (docs/protocol/terminals.mdx:8-25) states: "Before attempting to use terminal methods, Agents MUST verify that the Client supports this capability by checking ... `clientCapabilities.terminal`"。`_meta` is explicitly reserved and "Implementations MUST NOT make assumptions about values at these keys" (schema.json:1961)。
-- 当前实现: checkTerminalOutput 读取 `clientCapabilities._meta.terminal_output === true` 来决定 terminal 支持。从未咨询标准 `clientCapabilities.terminal` 布尔值,因此宣告 `terminal: true`（没有 Claude-Code 特定 `_meta.terminal_output` flag）的合规 ACP 客户端被视为不支持 terminals,而保留的 `_meta` 字段被视为真正的能力。
-- 修复建议: 将标准能力作为主要,仅对较旧的 Claude-Code 客户端的遗留 `_meta` flag 进行回退:
+- 当前实现: checkTerminalOutput 读取 `clientCapabilities._meta.terminal_output === true` 来决定 terminal 支持。从未咨询标准 `clientCapabilities.terminal` 布尔值,因此宣告 `terminal: true`（没有 satou-code 特定 `_meta.terminal_output` flag）的合规 ACP 客户端被视为不支持 terminals,而保留的 `_meta` 字段被视为真正的能力。
+- 修复建议: 将标准能力作为主要,仅对较旧的 satou-code 客户端的遗留 `_meta` flag 进行回退:
 
   ~~~ts
   function checkTerminalOutput(clientCapabilities?: ClientCapabilities): boolean {
     if (!clientCapabilities) return false
     if (clientCapabilities.terminal === true) return true
-    // Legacy Claude-Code clients advertised via _meta before terminal: bool existed
+    // Legacy satou-code clients advertised via _meta before terminal: bool existed
     const meta = (clientCapabilities as unknown as Record<string, unknown>)._meta
     return !!meta && typeof meta === 'object' && (meta as Record<string, unknown>)['terminal_output'] === true
   }
   ~~~
 
-### 5.2 [major] terminal 生命周期未实现,伪造 terminalId 且 _meta 注入非标准键 — 🔶 简化版已修复 (2026-06-19),完整版待办
+### 5.2 [major] terminal 生命周期未实现,伪造 terminalId 且 _meta 传入非标准键 — 🔶 简化版已修复 (2026-06-19),完整版待办
 
 - 位置: `src/services/acp/bridge.ts` `toolUpdateFromToolResult` Bash 分支 + `toolInfoFromToolUse` Bash 分支
 - 规范要求: Terminals doc (docs/protocol/terminals.mdx:27-110) defines the standard terminal lifecycle: the Agent MUST call `terminal/create` to obtain a real `terminalId`, embed it via ToolCallContent `{type:'terminal', terminalId}` (schema.json:3242-3256), and the Client retrieves output via `terminal/output`。ToolCallUpdate._meta is reserved: "Implementations MUST NOT make assumptions about values at these keys" (schema.json:3555)。
@@ -498,9 +498,9 @@
 
 - 位置: `src/services/acp/permissions.ts:185-209` (handleExitPlanMode options) 和 244-254 (selectedOption check)
 - 规范要求: PermissionOption.optionId is a free-form string (schema.json:1988-1990) with no enum constraint, so the custom optionIds `auto`、`acceptEdits`、`default`、`plan`、`bypassPermissions` are schema-valid。然而,与 session-mode ID 碰撞的 optionId 值是应用级歧义,PermissionOptionKind 是唯一标准化的 hint（四变体枚举）。对于实际上切换会话模式的选项（auto/acceptEdits/bypassPermissions）使用 `kind:'allow_always'` 过载了 allow_always 语义。
-- 当前实现: ExitPlanMode 发出 4-5 个自定义选项,其中 optionId 等于会话模式 id。kind 字段设置为 allow_always/allow_once/reject_once 作为粗略提示,但 optionId 空间（模式 id）是 Claude-Code 约定,未在协议中文档化。这是允许的可扩展性,但 kind 不忠实地描述 "此选项更改会话模式"。
+- 当前实现: ExitPlanMode 发出 4-5 个自定义选项,其中 optionId 等于会话模式 id。kind 字段设置为 allow_always/allow_once/reject_once 作为粗略提示,但 optionId 空间（模式 id）是 satou-code 约定,未在协议中文档化。这是允许的可扩展性,但 kind 不忠实地描述 "此选项更改会话模式"。
 - 备注: 不是硬性违规,因为 optionId 是 free-form,ExitPlanMode 映射到有效的 ToolKind `switch_mode`。
-- 修复建议: 可按原样接受；考虑在这些选项上添加 `_meta` hint（例如 `_meta.claudeCode.changesMode = true`）,以便客户端可以不同地渲染它们,并确保 optionId 值在 agentCapabilities._meta 中文档化为 Claude-Code 特定的。
+- 修复建议: 可按原样接受；考虑在这些选项上添加 `_meta` hint（例如 `_meta.claudeCode.changesMode = true`）,以便客户端可以不同地渲染它们,并确保 optionId 值在 agentCapabilities._meta 中文档化为 satou-code 特定的。
 
 ### 5.8 [nit] rawInput 浅克隆,易受嵌套突变影响
 
@@ -844,7 +844,7 @@
 | §4.4 Bash _meta 键未命名空间化 | 非规范违规（_meta 允许任意附加键）；仅命名风格不一致。 |
 | §5.4 reject_always 未提供 | PermissionOptionKind 四变体为推荐而非 MUST；REPL 现有交互流不支持持久的拒绝记忆。列为 P2。 |
 | §5.7 ExitPlanMode optionId 与 session-mode 碰撞 | optionId 是 free-form 字符串,使用模式 id 作为值是合法扩展；ExitPlanMode 映射为 switch_mode,语义可辨。 |
-| §5.8 rawInput 浅克隆 | Schema-valid,仅在嵌套对象被后续突变时才有问题；Claude Code 工具 input 通常不可变。低风险。 |
+| §5.8 rawInput 浅克隆 | Schema-valid,仅在嵌套对象被后续突变时才有问题；satou code 工具 input 通常不可变。低风险。 |
 | §6.2 响应中携带 models 字段 | 为 SDK draft 类型驱动,严格 v1 Client 会忽略；若客户端使用 SDK 同版本,则 models 是有用的扩展字段。优先移除但非阻断。 |
 | §6.4 value 类型守卫冗余 | 不影响合规性,仅代码质量问题。 |
 | §7.4 image url 占位字段命名 | 实现合规,仅为字段映射文档。 |

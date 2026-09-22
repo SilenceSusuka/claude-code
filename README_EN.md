@@ -1,4 +1,4 @@
-# Claude Code Best V5 (CCB)
+# satou code Best V5 (CCB)
 
 [![GitHub Stars](https://img.shields.io/github/stars/claude-code-best/claude-code?style=flat-square&logo=github&color=yellow)](https://github.com/claude-code-best/claude-code/stargazers)
 [![GitHub Contributors](https://img.shields.io/github/contributors/claude-code-best/claude-code?style=flat-square&color=green)](https://github.com/claude-code-best/claude-code/graphs/contributors)
@@ -9,7 +9,7 @@
 
 > Which Claude do you like? The open source one is the best.
 
-A reverse-engineered / decompiled source restoration of Anthropic's official [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI tool. The goal is to reproduce most of Claude Code's functionality and engineering capabilities. It's abbreviated as CCB.
+A reverse-engineered / decompiled source restoration of Anthropic's official CLI tool ([upstream docs](https://docs.anthropic.com/en/docs/claude-code)), published as satou code. The goal is to reproduce most of its functionality and engineering capabilities. It's abbreviated as CCB.
 
 [Documentation (Chinese)](https://ccb.agent-aura.top/) — PR contributions welcome.
 
@@ -94,7 +94,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
    bun upgrade
    ```
 
-- Standard Claude Code configuration — each provider has its own setup method
+- Standard satou code configuration — each provider has its own setup method
 
 ### Command Execution Location
 
@@ -208,4 +208,4 @@ The TUI (REPL) mode requires a real terminal and cannot be launched directly via
 
 ## License
 
-This project is for educational and research purposes only. All rights to Claude Code belong to [Anthropic](https://www.anthropic.com/).
+This project is for educational and research purposes only. All rights to the upstream project belong to [Anthropic](https://www.anthropic.com/).

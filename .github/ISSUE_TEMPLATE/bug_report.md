@@ -22,7 +22,7 @@ assignees: []
 |---|---|
 | 操作系统| 例如 macOS 15.4、Ubuntu 24.04|
 | Bun 版本| 例如 `bun --version` 的输出|
-| Claude Code 版本| 例如 `2.4.3` 或 commit hash|
+| satou code 版本| 例如 `2.4.3` 或 commit hash|
 | 安装方式| `bun run build` / npm / 其他|
 | 模型| 例如 claude-sonnet-4-6、claude-opus-4-7|
 

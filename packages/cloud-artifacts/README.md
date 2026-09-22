@@ -187,7 +187,7 @@ curl -X POST "http://localhost:8787/upload" \
 |------|-------------|
 | 所有请求返 HTTP 200 但业务出错 | 经 Deno Deploy 代理时正常现象，看 body 的 `error` 字段判断真实状态 |
 | `curl` 到 `*.workers.dev` 超时 | 国内 DNS 污染 + 路由问题，走 `cloud-artifacts.claude-code-best.win` 出口或挂代理 |
-| 响应 html 多一段 `<a href="/cdn-cgi/content...">` 和 `<script>` | Cloudflare 默认注入的 Browser Insights（RUM），不影响内容渲染。要纯净响应：dashboard → Workers & Pages → cloud-artifacts → 关 Web Analytics |
+| 响应 html 多一段 `<a href="/cdn-cgi/content...">` 和 `<script>` | Cloudflare 默认传入的 Browser Insights（RUM），不影响内容渲染。要纯净响应：dashboard → Workers & Pages → cloud-artifacts → 关 Web Analytics |
 | 上传 413 但文件不到 10MB | 检查 `Content-Length` header 是否被中间层改写；Worker 同时按 `Content-Length` 和 `arrayBuffer().byteLength` 双重校验 |
 | `?ttl=14` 返 400 | 设计如此，只允许 7 或 30（对应 R2 lifecycle prefix） |
 | `wrangler secret list` 看到 TOKEN 但上传 401 | token 值不一致。重新 `wrangler secret put TOKEN` 设正确值 |

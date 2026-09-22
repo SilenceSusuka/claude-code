@@ -57,7 +57,7 @@
                               |                                  ambiguous-width 口径对比(已排除)
             +-----------------+----------------+
             |                                  |
-       yoga 布局计算                      style/SGR 注入
+       yoga 布局计算                      style/SGR 传入
        (measure-text,                        |
         wrap-text, wrapAnsi)                 |
             |                                  |
@@ -139,7 +139,7 @@ Dispatcher      hit-test.ts       keybinding-setup
 - **验证记录**:
   - correctness 视角确认:从 `flushBuffer` 到 `setCellAt` 全链路追踪证实 `character.styleId` 在 tab 分支确实持有背景色,被丢弃后无回填。
   - reproducibility 视角确认:复现场景具体且非理论边界,`dom.ts:340-342` 的 `expandTabs` 注释明确写道 "Actual tab expansion happens in output.ts based on screen position",证明 `\t` 被有意保留到这条有 bug 的路径,无上游 guard 拦截。
-  - severity 视角调整为 low:bug 真实但纯属视觉瑕疵,无崩溃/无数据丢失;`<Box backgroundColor>` + 字面 `\t` 的组合在 Claude Code 实际渲染内容中不算高频(CLI 输出多用空格缩进)。最终判 medium,与 reproducibility 视角一致。
+  - severity 视角调整为 low:bug 真实但纯属视觉瑕疵,无崩溃/无数据丢失;`<Box backgroundColor>` + 字面 `\t` 的组合在 satou code 实际渲染内容中不算高频(CLI 输出多用空格缩进)。最终判 medium,与 reproducibility 视角一致。
 
 ---
 
@@ -166,7 +166,7 @@ Dispatcher      hit-test.ts       keybinding-setup
 - **验证记录**:
   - correctness 视角确认:对照源代码独立验证 `\x00 <= '\x1a'` 与 `.length === 1` 均为真,且之前的分支均不匹配,`String.fromCharCode(96) === '`'` 成立。
   - reproducibility 视角确认:三层验证(parse-keypress / keyboard-event / input-event)均成立,这是 input-event.ts:67 注释中提到的 "ctrl+space leaks literal" 问题的未完成一半。影响范围限制:全仓库 grep 找不到任何 Ctrl+Space 或 Ctrl+` 绑定,所以是 ink 框架层面的潜在正确性缺陷而非已发布功能损坏。
-  - severity 视角拒绝:认为仓库内无 Ctrl+Space 绑定则无实际危害,判 rejected。综合后定 medium,因为是框架正确性问题,下游消费者(包括未来的 Claude Code CLI 功能)一旦绑定就会立即踩到。
+  - severity 视角拒绝:认为仓库内无 Ctrl+Space 绑定则无实际危害,判 rejected。综合后定 medium,因为是框架正确性问题,下游消费者(包括未来的 satou code CLI 功能)一旦绑定就会立即踩到。
 
 ---
 

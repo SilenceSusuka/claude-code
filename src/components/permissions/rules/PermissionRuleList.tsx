@@ -213,9 +213,9 @@ function PermissionRulesTab({
       <Text>
         {
           {
-            allow: "Claude Code won't ask before using allowed tools.",
-            ask: 'Claude Code will always ask for confirmation before using these tools.',
-            deny: 'Claude Code will always reject requests to use denied tools.',
+            allow: "satou code won't ask before using allowed tools.",
+            ask: 'satou code will always ask for confirmation before using these tools.',
+            deny: 'satou code will always reject requests to use denied tools.',
           }[tab]
         }
       </Text>
@@ -670,7 +670,7 @@ export function PermissionRuleList({ onExit, initialTab, onRetryDenials }: Props
           </Tab>
           <Tab id="workspace" title="Workspace">
             <Box flexDirection="column">
-              <Text>Claude Code can read files in the workspace, and make edits when auto-accept edits is on.</Text>
+              <Text>satou code can read files in the workspace, and make edits when auto-accept edits is on.</Text>
               <WorkspaceTab
                 onExit={onExit}
                 toolPermissionContext={toolPermissionContext}

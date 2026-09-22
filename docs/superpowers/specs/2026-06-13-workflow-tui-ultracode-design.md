@@ -26,7 +26,7 @@
 1. 全量重写 `src/workflow/` 集成层（引擎包为地基，不动其核心）。
 2. 后端为单一 `claude-code` `AgentAdapter`，但**深度接入会话体系**：provider/model/agentType/tools/telemetry 全从活的 `AppState` 解析。
 3. 把 `/workflows` **原地重写**为全屏**双栏**面板：左栏=各 workflow 的阶段树（光标移动），右栏=聚焦 workflow 的 agent 运行状况 + 基础信息；监控 + 控制（启动命名/resume/kill/展开）。
-4. 新增 `/ultracode` **纯知识 prompt skill**：把 workflow 编排工作法注入上下文，零运行时副作用。
+4. 新增 `/ultracode` **纯知识 prompt skill**：把 workflow 编排工作法传入上下文，零运行时副作用。
 5. 旧 `/workflows` 文本命令重写为面板；接线点切换到新 wiring，外部 `Tool`/命令接口不变。
 
 **非目标**
@@ -244,13 +244,13 @@ j/k run · r resume · x kill · n new
 - **resume/budget**：`resumeFromRunId` 重放 journal；`budget.total` 硬顶（默认无限）。
 - **文件与命令**：`.claude/workflows/`、`.claude/workflow-runs/<runId>/journal.jsonl`、`/workflows` 面板、`/<name>` 命名命令。
 
-调用即注入上下文，**不改主循环、零运行时副作用**。
+调用即传入上下文，**不改主循环、零运行时副作用**。
 
 ## 12. 错误处理 / 权限 / 生命周期 / 并发 / budget / skip-retry
 
 - **错误**：脚本语法/meta 错 → `parseScript` 即时返错（不进后台）；agent 抛错 → `kind:'dead'`→`null`，workflow 继续（parallel/pipeline 容错）；`WorkflowAbortedError` → `killed`；其它 → `failed`+error。终态走 `run_done` + `LocalWorkflowTask` complete/fail/kill。
 - **权限**：worker 用 `assembleToolPool(workerPermissionContext, mcp.tools)`，权限模式取 agent 定义或 `acceptEdits`；面板启动的 run 用面板 `ToolUseContext` 的 `canUseTool`。`WorkflowPermissionRequest.tsx` 保留并接新 wiring。
-- **生命周期/并发/budget**：复用引擎 `Semaphore`（`min(16, cores-2)`）、`MAX_TOTAL_AGENTS=1000`、`MAX_ITEMS_PER_CALL=4096`、`Budget`（默认 `null` 无限；可经 settings/env 注入 turn 级上限，留参数）。
+- **生命周期/并发/budget**：复用引擎 `Semaphore`（`min(16, cores-2)`）、`MAX_TOTAL_AGENTS=1000`、`MAX_ITEMS_PER_CALL=4096`、`Budget`（默认 `null` 无限；可经 settings/env 传入 turn 级上限，留参数）。
 - **skip/retry（per-agent）**：引擎 `taskRegistrar.pendingAction` seam 保留；v1 返 `null`。面板控制诉求由 kill/resume 覆盖。
 
 ## 13. 测试策略
@@ -284,4 +284,4 @@ j/k run · r resume · x kill · n new
 - per-agent skip/retry 的 UI 接线（引擎 seam 已在）。
 - `ultracode` 运行时行为开关（默认倾向 Workflow 工具）——本期为纯知识 skill。
 - 跨进程/重启的 live 进度恢复（当前内存；resume 走 journal）。
-- `budgetTotal` 从 settings/env 注入 turn 级预算。
+- `budgetTotal` 从 settings/env 传入 turn 级预算。

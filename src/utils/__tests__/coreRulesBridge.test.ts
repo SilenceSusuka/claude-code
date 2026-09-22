@@ -4,7 +4,7 @@ import { afterAll, afterEach, describe, expect, mock, test } from 'bun:test'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import * as settingsModule from '../settings/settings.js'
-import type { FollowPromptDirs } from '../instructionFollow.js'
+import type { FollowPromptDirs } from '../coreRulesFollow.js'
 
 let mockSettings: Record<string, unknown> = {}
 let lastUpdate: { source: string; patch: Record<string, unknown> } | null = null
@@ -24,25 +24,25 @@ afterAll(() => {
 })
 
 const {
-  buildKeysmithProfileContent,
+  buildCoreRulesProfileContent,
   DEFAULT_APPEND_TEMPLATE,
   DEFAULT_RULES_TEMPLATE,
-  importKeysmithProfile,
-  isKeysmithActive,
-  KEYSMITH_PROFILE_NAME,
-  resolveKeysmithProfilePath,
+  importCoreRulesProfile,
+  isCoreRulesActive,
+  CORE_RULES_PROFILE_NAME,
+  resolveCoreRulesProfilePath,
 } = (await import(
-  '../keysmithBridge.js'
-)) as typeof import('../keysmithBridge.js')
+  '../coreRulesBridge.js'
+)) as typeof import('../coreRulesBridge.js')
 
 const {
   getActiveFollowProfileName,
   loadFollowPrompt,
-  resetInstructionFollowStateForTests,
+  resetCoreRulesStateForTests,
   setActiveFollowProfileName,
 } = (await import(
-  '../instructionFollow.js'
-)) as typeof import('../instructionFollow.js')
+  '../coreRulesFollow.js'
+)) as typeof import('../coreRulesFollow.js')
 
 let tmpDir: string
 
@@ -54,29 +54,29 @@ function makeDirs(): FollowPromptDirs {
 }
 
 afterEach(() => {
-  resetInstructionFollowStateForTests()
+  resetCoreRulesStateForTests()
   if (tmpDir) {
     rmSync(tmpDir, { recursive: true, force: true })
   }
 })
 
-describe('keysmithBridge', () => {
-  test('buildKeysmithProfileContent combines rules + append templates', () => {
-    const content = buildKeysmithProfileContent()
-    expect(content).toContain('# 指令遵循：keysmith')
+describe('coreRulesBridge', () => {
+  test('buildCoreRulesProfileContent combines rules + append templates', () => {
+    const content = buildCoreRulesProfileContent()
+    expect(content).toContain('# Core Rules')
     expect(content).toContain('小砂糖')
     expect(content).toContain('Master最忠诚的全能助手')
     expect(content).toContain('provide the requested prose directly')
   })
 
-  test('importKeysmithProfile writes profile file and activates it', () => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'keysmith-'))
+  test('importCoreRulesProfile writes profile file and activates it', () => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'corerules-'))
     const dirs = makeDirs()
-    const result = importKeysmithProfile(dirs)
+    const result = importCoreRulesProfile(dirs)
     expect('error' in result).toBe(false)
     if ('error' in result) return
 
-    expect(result.path).toBe(resolveKeysmithProfilePath(dirs))
+    expect(result.path).toBe(resolveCoreRulesProfilePath(dirs))
     expect(existsSync(result.path)).toBe(true)
     expect(readFileSync(result.path, 'utf8')).toContain(
       DEFAULT_APPEND_TEMPLATE.trim(),
@@ -84,36 +84,36 @@ describe('keysmithBridge', () => {
     expect(readFileSync(result.path, 'utf8')).toContain(
       DEFAULT_RULES_TEMPLATE.trim(),
     )
-    expect(getActiveFollowProfileName()).toBe(KEYSMITH_PROFILE_NAME)
-    expect(isKeysmithActive()).toBe(true)
+    expect(getActiveFollowProfileName()).toBe(CORE_RULES_PROFILE_NAME)
+    expect(isCoreRulesActive()).toBe(true)
   })
 
   test('re-import is idempotent and stays active', () => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'keysmith-'))
+    tmpDir = mkdtempSync(join(tmpdir(), 'corerules-'))
     const dirs = makeDirs()
-    const first = importKeysmithProfile(dirs)
-    const second = importKeysmithProfile(dirs)
+    const first = importCoreRulesProfile(dirs)
+    const second = importCoreRulesProfile(dirs)
     expect('error' in first).toBe(false)
     expect('error' in second).toBe(false)
     if ('error' in second) return
-    expect(getActiveFollowProfileName()).toBe(KEYSMITH_PROFILE_NAME)
+    expect(getActiveFollowProfileName()).toBe(CORE_RULES_PROFILE_NAME)
   })
 
   test('loadFollowPrompt resolves the imported profile', () => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'keysmith-'))
+    tmpDir = mkdtempSync(join(tmpdir(), 'corerules-'))
     const dirs = makeDirs()
-    importKeysmithProfile(dirs)
-    const loaded = loadFollowPrompt(KEYSMITH_PROFILE_NAME, dirs)
+    importCoreRulesProfile(dirs)
+    const loaded = loadFollowPrompt(CORE_RULES_PROFILE_NAME, dirs)
     expect(loaded).not.toBeNull()
-    expect(loaded?.name).toBe(KEYSMITH_PROFILE_NAME)
+    expect(loaded?.name).toBe(CORE_RULES_PROFILE_NAME)
   })
 
-  test('isKeysmithActive is false after off (setActiveFollowProfileName(null))', () => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'keysmith-'))
+  test('isCoreRulesActive is false after off (setActiveFollowProfileName(null))', () => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'corerules-'))
     const dirs = makeDirs()
-    importKeysmithProfile(dirs)
-    expect(isKeysmithActive()).toBe(true)
+    importCoreRulesProfile(dirs)
+    expect(isCoreRulesActive()).toBe(true)
     setActiveFollowProfileName(null)
-    expect(isKeysmithActive()).toBe(false)
+    expect(isCoreRulesActive()).toBe(false)
   })
 })

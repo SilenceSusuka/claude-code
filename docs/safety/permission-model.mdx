@@ -1,6 +1,6 @@
 ---
 title: "权限模型 - Allow/Ask/Deny 三级权限体系"
-description: "详解 Claude Code 的三级权限模型实现：基于 src/utils/permissions/permissions.ts 的规则匹配引擎、五层规则来源优先级、工具名/命令/路径三维度匹配、Denial Tracking 死循环防护、权限模式切换机制。"
+description: "详解 satou code 的三级权限模型实现：基于 src/utils/permissions/permissions.ts 的规则匹配引擎、五层规则来源优先级、工具名/命令/路径三维度匹配、Denial Tracking 死循环防护、权限模式切换机制。"
 keywords: ["权限模型", "Allow Ask Deny", "PermissionRule", "checkPermissions", "Denial Tracking", "权限规则"]
 ---
 
@@ -155,7 +155,7 @@ const DENIAL_LIMITS = {
 当 AI 被连续拒绝同一类操作达到上限时：
 1. `recordDenial()` 记录拒绝，增加计数
 2. `shouldFallbackToPrompting()` 检测到连续拒绝，返回 true
-3. 系统向 AI 注入消息："Your previous tool call was rejected..."
+3. 系统向 AI 传入消息："Your previous tool call was rejected..."
 4. AI 被迫改变策略，避免"反复请求同一个被拒操作"的死循环
 
 操作成功时调用 `recordSuccess()` 重置计数。

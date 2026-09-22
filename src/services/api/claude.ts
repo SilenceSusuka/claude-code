@@ -73,7 +73,7 @@ import { resolveAppliedEffort } from '../../utils/effort.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
 import { errorMessage } from '../../utils/errors.js'
 import { captureAPIRequest, logError } from '../../utils/log.js'
-import { appendInstructionPrimeTurns } from '../../utils/instructionPrime.js'
+import { appendCoreRulesTurns } from '../../utils/coreRules.js'
 import {
   createAssistantAPIErrorMessage,
   createUserMessage,
@@ -1347,7 +1347,7 @@ async function* queryModel(
     // the full tool pool so SearchExtraToolsTool can search deferred MCP tools that
     // were intentionally filtered out of the initial API tool list above.
     yield* queryModelOpenAI(
-      appendInstructionPrimeTurns(messagesForAPI),
+      appendCoreRulesTurns(messagesForAPI),
       systemPrompt,
       tools,
       signal,
@@ -1359,7 +1359,7 @@ async function* queryModel(
   if (getAPIProvider() === 'gemini') {
     const { queryModelGemini } = await import('./gemini/index.js')
     yield* queryModelGemini(
-      appendInstructionPrimeTurns(messagesForAPI),
+      appendCoreRulesTurns(messagesForAPI),
       systemPrompt,
       filteredTools,
       signal,
@@ -1372,7 +1372,7 @@ async function* queryModel(
   if (getAPIProvider() === 'grok') {
     const { queryModelGrok } = await import('./grok/index.js')
     yield* queryModelGrok(
-      appendInstructionPrimeTurns(messagesForAPI),
+      appendCoreRulesTurns(messagesForAPI),
       systemPrompt,
       filteredTools,
       signal,
@@ -1422,7 +1422,7 @@ async function* queryModel(
 
   // Recency prime must be the last two turns the model sees, even if a
   // deferred-tools reminder was just appended.
-  messagesForAPI = appendInstructionPrimeTurns(messagesForAPI)
+  messagesForAPI = appendCoreRulesTurns(messagesForAPI)
 
   // Chrome tool-search instructions: when the delta attachment is enabled,
   // these are carried as a client-side block in mcp_instructions_delta
@@ -3453,7 +3453,7 @@ export async function queryHaiku({
 type QueryWithModelOptions = Omit<Options, 'getToolPermissionContext'>
 
 /**
- * Query a specific model through the Claude Code infrastructure.
+ * Query a specific model through the satou code infrastructure.
  * This goes through the full query pipeline including proper authentication,
  * betas, and headers - unlike direct API calls.
  */

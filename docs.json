@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Claude Code Architecture",
+  "name": "satou code Architecture",
   "colors": {
     "primary": "#D97706",
     "light": "#F59E0B",
@@ -16,7 +16,7 @@
           {
             "group": "介绍",
             "pages": [
-              "docs/introduction/what-is-claude-code",
+              "docs/introduction/what-is-satou-code",
               "docs/introduction/why-this-whitepaper",
               "docs/introduction/architecture-overview"
             ]
@@ -166,7 +166,7 @@
     }
   },
   "search": {
-    "prompt": "搜索 Claude Code 架构文档..."
+    "prompt": "搜索 satou code 架构文档..."
   },
   "seo": {
     "metatags": {
@@ -184,7 +184,7 @@
   "redirects": [
     {
       "source": "/docs/introduction",
-      "destination": "/docs/introduction/what-is-claude-code"
+      "destination": "/docs/introduction/what-is-satou-code"
     }
   ]
 }

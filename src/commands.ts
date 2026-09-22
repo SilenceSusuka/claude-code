@@ -179,7 +179,7 @@ import privacySettings from './commands/privacy-settings/index.js'
 import hooks from './commands/hooks/index.js'
 import files from './commands/files/index.js'
 import follow from './commands/follow/index.js'
-import keysmith from './commands/keysmith/index.js'
+import corerules from './commands/corerules/index.js'
 import branch from './commands/branch/index.js'
 import artifacts from './commands/artifacts/index.js'
 import agents from './commands/agents/index.js'
@@ -251,7 +251,7 @@ import effort from './commands/effort/index.js'
 const usageReport: Command = {
   type: 'prompt',
   name: 'insights',
-  description: 'Generate a report analyzing your Claude Code sessions',
+  description: 'Generate a report analyzing your satou code sessions',
   contentLength: 0,
   progressMessage: 'analyzing your sessions',
   source: 'builtin',
@@ -333,7 +333,7 @@ const COMMANDS = memoize((): Command[] => [
   files,
   follow,
   heapDump,
-  keysmith,
+  corerules,
   help,
   ide,
   init,

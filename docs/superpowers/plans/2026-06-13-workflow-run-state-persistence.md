@@ -4,7 +4,7 @@
 
 **Goal:** 让 workflow 的终态 `RunProgress`（含 `returnValue`）落盘到 `.claude/workflow-runs/<runId>/state.json`，跨进程重启可恢复，供 `/workflows` 面板展示历史 run 与按 runId 取 return。
 
-**Architecture:** host 侧新增 `persistence.ts` 模块（原子写 + 容错读 + 扫盘列表），引擎层零改动。`service.ts` 订阅 bus 的 `run_done` 事件写盘；`store.ts` 加 `hydrate()` 注入磁盘 run；面板 mount 时扫盘 hydrate；`getRun` 内存 miss 走 async fallback。三种终态（completed/failed/killed）共用 `run_done` 写盘入口，shutdown 时 kill 也走同路径，无需额外钩子。
+**Architecture:** host 侧新增 `persistence.ts` 模块（原子写 + 容错读 + 扫盘列表），引擎层零改动。`service.ts` 订阅 bus 的 `run_done` 事件写盘；`store.ts` 加 `hydrate()` 传入磁盘 run；面板 mount 时扫盘 hydrate；`getRun` 内存 miss 走 async fallback。三种终态（completed/failed/killed）共用 `run_done` 写盘入口，shutdown 时 kill 也走同路径，无需额外钩子。
 
 **Tech Stack:** TypeScript strict、Bun runtime、`node:fs/promises`（mkdir/writeFile/readdir/rename）、`bun:test`、现有 `@claude-code-best/workflow-engine` 进度事件总线。
 
@@ -21,7 +21,7 @@
 | `src/workflow/persistence.ts` | 新增 | `getRunsDir()` / `writeRunState(runsDir, run)` / `readRunState(runsDir, runId)` / `listPersistedRuns(runsDir)`；原子覆盖写；容错读 |
 | `src/workflow/__tests__/persistence.test.ts` | 新增 | 持久化往返、原子性、损坏容错、扫盘 |
 | `src/workflow/progress/store.ts` | 改 | `ProgressStore` 类型 + 实现加 `hydrate(run)` |
-| `src/workflow/__tests__/progressStore.test.ts` | 扩展 | hydrate 注入 / 已存在跳过 / 通知 listener |
+| `src/workflow/__tests__/progressStore.test.ts` | 扩展 | hydrate 传入 / 已存在跳过 / 通知 listener |
 | `src/workflow/ports.ts` | 改 | `${getProjectRoot()}/.claude/workflow-runs` → `getRunsDir()` |
 | `src/workflow/service.ts` | 改 | `makeService(ports, store, bus)`；订阅 `run_done` 写盘；`loadPersistedRuns()`；`getRunAsync(id)` fallback；`persistedLoaded` flag |
 | `src/workflow/__tests__/service.test.ts` | 扩展 | run_done 写盘断言、getRunAsync fallback、loadPersistedRuns、签名更新 |
@@ -318,7 +318,7 @@ git commit -m "feat(workflow): 添加 run state 持久化模块（原子写 + �
 Append to `src/workflow/__tests__/progressStore.test.ts`:
 
 ```ts
-test('hydrate 注入新 run → get 命中 + list 含该项 + 通知 listener', () => {
+test('hydrate 传入新 run → get 命中 + list 含该项 + 通知 listener', () => {
   const { store } = newStore()
   let notified = 0
   store.subscribe(() => notified++)
@@ -389,7 +389,7 @@ export type ProgressStore = {
   apply(event: ProgressEvent): void
   list(): RunProgress[]
   get(runId: string): RunProgress | undefined
-  /** 直接注入磁盘读出的 run（绕过 bus）；已存在的 runId 跳过——内存优先。 */
+  /** 直接传入磁盘读出的 run（绕过 bus）；已存在的 runId 跳过——内存优先。 */
   hydrate(run: RunProgress): void
   /** 供 useSyncExternalStore：返回稳定引用，无变更时同一数组。 */
   subscribe(listener: () => void): () => void
@@ -418,7 +418,7 @@ Expected: PASS — 所有现有 + 2 个新测试
 
 ```bash
 git add src/workflow/progress/store.ts src/workflow/__tests__/progressStore.test.ts
-git commit -m "feat(workflow): store 添加 hydrate 用于注入磁盘历史 run"
+git commit -m "feat(workflow): store 添加 hydrate 用于传入磁盘历史 run"
 ```
 
 ---
@@ -723,7 +723,7 @@ test('loadPersistedRuns 扫盘 hydrate 历史 run；已有内存 run 不被覆�
     expect(ids).toContain('hA')
     expect(ids).toContain('hB')
     expect(ids).toContain('live')
-    // 内存优先：live 仍是 running（不被磁盘覆盖；磁盘里没有 live 也不会注入 STALE）
+    // 内存优先：live 仍是 running（不被磁盘覆盖；磁盘里没有 live 也不会传入 STALE）
     expect(svc.getRun('live')!.status).toBe('running')
     expect(svc.getRun('hA')!.returnValue).toBe('a')
   } finally {
@@ -787,7 +787,7 @@ test('getRunAsync 内存命中 → 不读盘', async () => {
   }
 })
 
-test('getRunAsync 内存 miss + 磁盘命中 → 返回磁盘值，且不注入内存（再次 get 仍读盘）', async () => {
+test('getRunAsync 内存 miss + 磁盘命中 → 返回磁盘值，且不传入内存（再次 get 仍读盘）', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'wf-svc-'))
   const persistence = await import('../persistence.js')
   const orig = persistence.getRunsDir
@@ -814,7 +814,7 @@ test('getRunAsync 内存 miss + 磁盘命中 → 返回磁盘值，且不注入�
     const got = await svc.getRunAsync('hist-only')
     expect(got?.returnValue).toEqual({ x: 1 })
     expect(readCalls).toBe(1)
-    // 不注入内存：再次 get 仍读盘
+    // 不传入内存：再次 get 仍读盘
     const got2 = await svc.getRunAsync('hist-only')
     expect(got2?.returnValue).toEqual({ x: 1 })
     expect(readCalls).toBe(2)
@@ -886,7 +886,7 @@ export type WorkflowService = {
   listRuns(): RunProgress[]
   getRun(runId: string): RunProgress | undefined
   /**
-   * 异步按 runId 查：内存命中则返回；miss 读盘 state.json（不注入内存）。
+   * 异步按 runId 查：内存命中则返回；miss 读盘 state.json（不传入内存）。
    * 供"按 runId 取历史 return"场景；面板展示请走 loadPersistedRuns + listRuns。
    */
   getRunAsync(runId: string): Promise<RunProgress | undefined>
@@ -1086,7 +1086,7 @@ git commit -m "chore(workflow): 持久化特性 precheck 收尾"
 - ✅ 数据流 读取② getRun fallback → Task 5 `getRunAsync`（spec 称 getRun，实现为 async 版本以保留同步语义；已在 Task 5 注释说明）
 - ✅ state.json 格式（schemaVersion=1 + RunProgress） → Task 1
 - ✅ 错误处理（writeRunState best-effort / readRunState 容错 / 扫盘跳过损坏） → Task 1 实现 + 测试
-- ✅ 关键不变量（内存优先 / 磁盘纯终态 / getRunAsync 不注入 / 持久化不阻断 / 引擎零改动） → Task 1/4/5 实现 + 测试断言
+- ✅ 关键不变量（内存优先 / 磁盘纯终态 / getRunAsync 不传入 / 持久化不阻断 / 引擎零改动） → Task 1/4/5 实现 + 测试断言
 - ✅ 测试策略 → persistence.test / progressStore.test / service.test / WorkflowsPanel.test 全覆盖
 
 **Placeholder scan:** 无 TBD/TODO；每个 step 含完整代码或精确命令。
@@ -1099,7 +1099,7 @@ git commit -m "chore(workflow): 持久化特性 precheck 收尾"
 - `getRunsDir()` —— Task 1 定义、Task 3 ports 引用、Task 4 service 引用，统一来源
 
 **歧义/已知偏离:**
-- spec 写"`getRun` fallback"，实现为新增 `getRunAsync`（同步 getRun 保留内存语义）。理由：避免破坏现有同步调用方（WorkflowsPanel 等）；fallback 是低频路径，async 更诚实。Task 5 测试显式断言"不注入内存"。
+- spec 写"`getRun` fallback"，实现为新增 `getRunAsync`（同步 getRun 保留内存语义）。理由：避免破坏现有同步调用方（WorkflowsPanel 等）；fallback 是低频路径，async 更诚实。Task 5 测试显式断言"不传入内存"。
 
 ---
 

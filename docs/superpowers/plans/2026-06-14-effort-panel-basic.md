@@ -688,9 +688,9 @@ EOF
 
 Ink 组件键盘测试在项目里没有现成 helper（已通过 Task 3.2 探查确认）。直接走 **Step 5.2 的纯函数抽取方案**——把确认/取消决策逻辑抽到 `effortPanelState.ts`，用纯函数测试覆盖分支。键盘 → handler 的连接由 `useKeybindings` 注册保证，**不**单独测（与 `ModelPicker` 测试策略一致）。
 
-- [ ] **Step 5.2: 抽取确认/取消为可测纯函数（注入 applyFn 避免循环依赖）**
+- [ ] **Step 5.2: 抽取确认/取消为可测纯函数（传入 applyFn 避免循环依赖）**
 
-把 `handleConfirm`/`handleCancel` 的决策逻辑抽到 `effortPanelState.ts`，**接受 `applyFn` 作为参数注入**，避免 `effortPanelState.ts` → `effort.tsx` → `EffortPanel.tsx` → `effortPanelState.ts` 的循环依赖，也避免测试触碰真实 settings。
+把 `handleConfirm`/`handleCancel` 的决策逻辑抽到 `effortPanelState.ts`，**接受 `applyFn` 作为参数传入**，避免 `effortPanelState.ts` → `effort.tsx` → `EffortPanel.tsx` → `effortPanelState.ts` 的循环依赖，也避免测试触碰真实 settings。
 
 在 `effortPanelState.ts` 末尾追加：
 
@@ -764,7 +764,7 @@ const handleCancel = React.useCallback(() => {
 
 注意 import 里也加 `CANCEL_MESSAGE`。
 
-- [ ] **Step 5.3: 写分支测试（用注入版纯函数）**
+- [ ] **Step 5.3: 写分支测试（用传入版纯函数）**
 
 在 `effortPanelState.test.ts` 末尾追加：
 
@@ -812,7 +812,7 @@ test('常量字符串', () => {
 })
 ```
 
-注意：因注入 mockApply，**完全不需要 mock settings**——这是注入方案的最大红利。
+注意：因传入 mockApply，**完全不需要 mock settings**——这是传入方案的最大红利。
 
 - [ ] **Step 5.4: 跑测试**
 

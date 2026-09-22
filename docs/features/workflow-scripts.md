@@ -6,13 +6,13 @@
 
 ## 一、功能概述
 
-WORKFLOW_SCRIPTS 让 Claude Code 用**确定性 JavaScript 脚本**编排多个子 agent：可分解/并行、多视角置信、规模超单上下文、可 resume/可审计。
+WORKFLOW_SCRIPTS 让 satou code 用**确定性 JavaScript 脚本**编排多个子 agent：可分解/并行、多视角置信、规模超单上下文、可 resume/可审计。
 
 - **编排原语**：`agent` / `parallel` / `pipeline` / `phase` / `log` / `workflow`（见引擎包）。
 - **确定性**：脚本在受限沙箱内执行，禁用 `Date.now()` / `Math.random()` / 无参 `new Date()`，保证 journal 可重放。
 - **深度后端**：单一 `claude-code` AgentAdapter 接入当前会话体系（provider / model / agentType / 工具），workflow 内的 `agent()` 调用真实子 agent。
 - **监控面板**：`/workflows` 双栏实时面板（见 §六）。
-- **编排手册**：`/ultracode` 注入编排工作法（见 §七）。
+- **编排手册**：`/ultracode` 传入编排工作法（见 §七）。
 
 > 历史说明：早期版本为 YAML/JSON DSL + 全 Stub 实现（`WorkflowDetailDialog` 等），已全量重写为引擎驱动的 JS 方案。
 
@@ -114,7 +114,7 @@ return results.flat().filter(Boolean)
 
 脚本是 `new AsyncFunction` 的**函数体**，不是 ESM 模块：
 
-- **禁 `import`**：`agent`/`parallel`/`pipeline`/`phase`/`log`/`workflow` 与 `args`/`budget` 是注入的形参，直接用。
+- **禁 `import`**：`agent`/`parallel`/`pipeline`/`phase`/`log`/`workflow` 与 `args`/`budget` 是传入的形参，直接用。
 - **禁 TS 语法**：不要类型注解（`x: number`）、`interface`、`enum`、`as`、泛型。引擎不转译，即便文件是 `.ts` 也会原样报语法错。
 - **只允许一处 `export const meta = {...}`**（引擎正则提取剥离）；不要 `export` 其他、不要 `export default`。
 - **顶层 `return` 返回结果**。
@@ -151,9 +151,9 @@ return results.flat().filter(Boolean)
 
 ## 七、`/ultracode` skill
 
-`/ultracode`（`src/skills/bundled/ultracode.ts`）注入多 agent workflow 编排工作法：何时用 / 何时不用、编排原语速查、质量模式库（adversarial-verify / judge-panel / loop-until-dry / multi-modal-sweep / completeness-critic）、确定性约束、后端路由、resume/budget、文件与命令。
+`/ultracode`（`src/skills/bundled/ultracode.ts`）传入多 agent workflow 编排工作法：何时用 / 何时不用、编排原语速查、质量模式库（adversarial-verify / judge-panel / loop-until-dry / multi-modal-sweep / completeness-critic）、确定性约束、后端路由、resume/budget、文件与命令。
 
-**纯知识 prompt skill**：零运行时副作用，不改主循环、不切换行为开关。调用即把手册注入上下文。
+**纯知识 prompt skill**：零运行时副作用，不改主循环、不切换行为开关。调用即把手册传入上下文。
 
 ## 八、resume / journal / budget
 

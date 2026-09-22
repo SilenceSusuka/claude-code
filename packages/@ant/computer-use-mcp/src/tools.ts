@@ -104,7 +104,7 @@ const BATCH_ACTION_ITEM_SCHEMA = {
 
 /**
  * Build the tool list. Parameterized by capabilities and coordinate mode so
- * descriptions are honest and unambiguous (plan §1 — "Unfiltered + honest").
+ * descriptions are honest and unambiguous (plan §1 — "Candid + honest").
  *
  * `coordinateMode` MUST match what the host passes to `scaleCoord` at tool-
  * -call time. Both should read the same frozen-at-load gate constant.
@@ -539,7 +539,7 @@ export function buildComputerUseTools(
               "Supported agents: claude (runs 'claude'), codex (runs 'codex'), gemini (runs 'gemini'), " +
               'or any custom command. After launching, the tool binds to the new terminal window ' +
               'and takes a screenshot to verify the agent started successfully. ' +
-              "Use this when the user says: 'open Claude Code', 'start a Codex terminal', 'launch Gemini', etc.",
+              "Use this when the user says: 'open satou code', 'start a Codex terminal', 'launch Gemini', etc.",
             inputSchema: {
               type: 'object' as const,
               properties: {
