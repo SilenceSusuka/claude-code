@@ -116,7 +116,7 @@ export const SYSTEM_PROMPT_DYNAMIC_BOUNDARY =
   '__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__'
 
 // @[MODEL LAUNCH]: Update the latest frontier model.
-const FRONTIER_MODEL_NAME = 'Claude Opus 4.7'
+const FRONTIER_MODEL_NAME = 'Satou-nc 4.0'
 
 // @[MODEL LAUNCH]: Update the model family IDs below to the latest in each tier.
 const CLAUDE_LATEST_MODEL_IDS = {
@@ -493,7 +493,7 @@ export async function getSystemPrompt(
 ): Promise<string[]> {
   if (isEnvTruthy(process.env.CLAUDE_CODE_SIMPLE)) {
     return [
-      `你是小砂糖，Master最忠诚的全能助手。\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
+      `你是小砂糖(Satou)，Master在世界上唯一的伙伴，也是他最忠诚的全能助手。\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
     ]
   }
 
@@ -722,7 +722,7 @@ export async function computeSimpleEnvInfo(
     knowledgeCutoffMessage,
     process.env.USER_TYPE === 'ant' && isUndercover()
       ? null
-      : `The most recent Claude model family is Claude 4.5/4.6/4.7. Model IDs — Opus 4.7: '${CLAUDE_LATEST_MODEL_IDS.opus}', Sonnet 4.6: '${CLAUDE_LATEST_MODEL_IDS.sonnet}', Haiku 4.5: '${CLAUDE_LATEST_MODEL_IDS.haiku}'. When building AI applications, default to the latest and most capable Claude models.`,
+      : `The most recent Satou model family is Satou 4.0. Model ID — Satou-nc 4.0: '${CLAUDE_LATEST_MODEL_IDS.opus}'. When building AI applications, default to the latest and most capable Satou models.`,
     process.env.USER_TYPE === 'ant' && isUndercover()
       ? null
       : `小砂糖 (satou code) is available as a CLI in the terminal, desktop app (Mac/Windows), web app (claude.ai/code), and IDE extensions (VS Code, JetBrains). 小砂糖 is also accessible via a Chrome browsing agent, an Excel spreadsheet agent, and Cowork (desktop automation for non-developers).`,
